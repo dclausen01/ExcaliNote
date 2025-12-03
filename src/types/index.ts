@@ -38,6 +38,10 @@ export interface NotebookStore {
   baseDir: string;
   setBaseDir: (dir: string) => void;
   
+  // Theme für Dark/Light Mode
+  theme: 'light' | 'dark';
+  setTheme: (theme: 'light' | 'dark') => void;
+  
   // Laden der Ordnerstruktur
   loadNotebooks: () => Promise<void>;
   

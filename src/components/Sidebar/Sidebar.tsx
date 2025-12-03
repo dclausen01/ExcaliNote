@@ -5,11 +5,22 @@ import { Plus, FolderPlus, FileText } from 'lucide-react';
 import type { NotebookItem } from '../../types';
 
 export default function Sidebar() {
-  const { notebooks, createFolder, createNote } = useNotebookStore();
+  const { notebooks, createFolder, createNote, theme } = useNotebookStore();
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemType, setNewItemType] = useState<'folder' | 'note'>('note');
   const [selectedParent, setSelectedParent] = useState<string>('');
+  
+  // Dark/Light Mode Farben
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
+  const borderColor = isDark ? 'border-gray-700' : 'border-gray-200';
+  const textColor = isDark ? 'text-gray-100' : 'text-gray-800';
+  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-500';
+  const hoverBg = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const inputBg = isDark ? 'bg-gray-800' : 'bg-white';
+  const inputBorder = isDark ? 'border-gray-600' : 'border-gray-300';
+  const dialogBg = isDark ? 'bg-gray-800' : 'bg-gray-50';
 
   // Funktion um alle Ordner zu finden
   const getAllFolders = (items: NotebookItem[], path: string = ''): { name: string; path: string }[] => {
@@ -55,14 +66,14 @@ export default function Sidebar() {
   const allFolders = getAllFolders(notebooks);
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className={`w-64 ${bgColor} border-r ${borderColor} flex flex-col`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-800">ExcaliNote</h1>
+      <div className={`p-4 border-b ${borderColor}`}>
+        <h1 className={`text-xl font-bold ${textColor}`}>ExcaliNote</h1>
       </div>
 
       {/* Toolbar */}
-      <div className="p-2 border-b border-gray-200 flex gap-2">
+      <div className={`p-2 border-b ${borderColor} flex gap-2`}>
         <button
           onClick={() => {
             setNewItemType('note');
@@ -89,20 +100,20 @@ export default function Sidebar() {
 
       {/* New Item Dialog */}
       {showNewMenu && (
-        <div className="p-3 bg-gray-50 border-b border-gray-200">
-          <div className="text-sm font-medium text-gray-700 mb-2">
+        <div className={`p-3 ${dialogBg} border-b ${borderColor}`}>
+          <div className={`text-sm font-medium ${textColor} mb-2`}>
             {newItemType === 'folder' ? 'Neuer Ordner' : 'Neue Notiz'}
           </div>
           
           {/* Parent Folder Selection */}
           <div className="mb-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className={`block text-xs font-medium ${textSecondary} mb-1`}>
               Speicherort:
             </label>
             <select
               value={selectedParent}
               onChange={(e) => setSelectedParent(e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+              className={`w-full px-2 py-1 border ${inputBorder} ${inputBg} ${textColor} rounded text-sm`}
             >
               <option value="">Hauptverzeichnis</option>
               {allFolders.map((folder) => (
@@ -126,7 +137,7 @@ export default function Sidebar() {
               }
             }}
             placeholder={newItemType === 'folder' ? 'Ordnername' : 'Notizname'}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm mb-2"
+            className={`w-full px-2 py-1 border ${inputBorder} ${inputBg} ${textColor} rounded text-sm mb-2`}
             autoFocus
           />
           
@@ -142,7 +153,7 @@ export default function Sidebar() {
                 setShowNewMenu(false);
                 setNewItemName('');
               }}
-              className="flex-1 px-2 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+              className={`flex-1 px-2 py-1 ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-300 text-gray-700'} rounded text-sm ${isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-400'}`}
             >
               Abbrechen
             </button>
@@ -153,7 +164,7 @@ export default function Sidebar() {
       {/* Folder Tree */}
       <div className="flex-1 overflow-y-auto p-2">
         {notebooks.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm mt-8">
+          <div className={`text-center ${textSecondary} text-sm mt-8`}>
             <p>Keine Notizbücher vorhanden</p>
             <p className="mt-2">Erstelle deine erste Notiz oder einen Ordner!</p>
           </div>

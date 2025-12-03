@@ -66,12 +66,15 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   currentNote: null,
   notebooks: [],
   baseDir: '',
+  theme: 'light',
   
   setCurrentNote: (path) => set({ currentNote: path }),
   
   setNotebooks: (notebooks) => set({ notebooks }),
   
   setBaseDir: (dir) => set({ baseDir: dir }),
+  
+  setTheme: (theme) => set({ theme }),
   
   loadNotebooks: async () => {
     try {

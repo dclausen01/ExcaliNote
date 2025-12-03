@@ -6,7 +6,7 @@ import { useNotebookStore } from '../../store/notebookStore';
 import { FileText, Grid } from 'lucide-react';
 
 export default function Editor() {
-  const { currentNote, notebooks, saveNote } = useNotebookStore();
+  const { currentNote, notebooks, saveNote, setTheme } = useNotebookStore();
   const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
   const [sceneData, setSceneData] = useState<any>(null);
   const [gridEnabled, setGridEnabled] = useState(false);
@@ -44,6 +44,11 @@ export default function Editor() {
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!currentNote) return;
 
+      // Theme-Tracking: Dark/Light Mode von Excalidraw erkennen
+      if (appState.theme) {
+        setTheme(appState.theme as 'light' | 'dark');
+      }
+
       const dataToSave = {
         elements,
         appState: {
@@ -67,7 +72,7 @@ export default function Editor() {
 
       return () => clearTimeout(timeoutId);
     },
-    [currentNote, saveNote]
+    [currentNote, saveNote, setTheme]
   );
 
   // Grid Toggle Handler
@@ -81,7 +86,7 @@ export default function Editor() {
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
             <img 
-              src="/assets/excalinotes_banner.png" 
+              src="./assets/excalinotes_banner.png" 
               alt="ExcaliNote Banner" 
               className="mx-auto max-w-full h-auto opacity-90"
               style={{ maxHeight: '300px' }}

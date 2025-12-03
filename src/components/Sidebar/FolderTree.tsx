@@ -29,8 +29,20 @@ function TreeItem({ item, level }: TreeItemProps) {
   const [editName, setEditName] = useState(item.name);
   const [isDragOver, setIsDragOver] = useState(false);
   
-  const { currentNote, setCurrentNote, deleteItem, renameItem } = useNotebookStore();
+  const { currentNote, setCurrentNote, deleteItem, renameItem, theme } = useNotebookStore();
   const isSelected = currentNote === item.path;
+  
+  // Dark/Light Mode Farben
+  const isDark = theme === 'dark';
+  const hoverBg = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const selectedBg = isDark ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-700';
+  const textColor = isDark ? 'text-gray-200' : 'text-gray-800';
+  const iconColor = isDark ? 'text-gray-400' : 'text-gray-600';
+  const selectedIconColor = isDark ? 'text-blue-400' : 'text-blue-600';
+  const actionHoverBg = isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200';
+  const deleteHoverBg = isDark ? 'hover:bg-red-900' : 'hover:bg-red-100';
+  const inputBorder = isDark ? 'border-blue-400' : 'border-blue-500';
+  const inputBg = isDark ? 'bg-gray-800' : 'bg-white';
 
   const handleClick = () => {
     if (item.type === 'note') {
@@ -126,7 +138,7 @@ function TreeItem({ item, level }: TreeItemProps) {
       <div
         className={`
           flex items-center gap-1 px-2 py-1.5 cursor-pointer rounded group
-          ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}
+          ${isSelected ? selectedBg : hoverBg}
           ${isDragOver && item.type === 'folder' ? 'bg-green-100 border-2 border-green-300 border-dashed' : ''}
         `}
         style={{ paddingLeft: `${paddingLeft}px` }}
@@ -139,13 +151,13 @@ function TreeItem({ item, level }: TreeItemProps) {
       >
         {/* Chevron für Ordner */}
         {item.type === 'folder' && (
-          <span className="text-gray-500">
+          <span className={iconColor}>
             {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </span>
         )}
         
         {/* Icon */}
-        <span className={isSelected ? 'text-blue-600' : 'text-gray-600'}>
+        <span className={isSelected ? selectedIconColor : iconColor}>
           {item.type === 'folder' ? (
             isOpen ? <FolderOpen size={16} /> : <Folder size={16} />
           ) : (
@@ -168,11 +180,11 @@ function TreeItem({ item, level }: TreeItemProps) {
               }
             }}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-1 py-0 border border-blue-500 rounded text-sm"
+            className={`flex-1 px-1 py-0 border ${inputBorder} ${inputBg} ${textColor} rounded text-sm`}
             autoFocus
           />
         ) : (
-          <span className="flex-1 text-sm truncate">
+          <span className={`flex-1 text-sm truncate ${textColor}`}>
             {item.type === 'note' ? item.name.replace('.excalidraw', '') : item.name}
           </span>
         )}
@@ -185,14 +197,14 @@ function TreeItem({ item, level }: TreeItemProps) {
                 e.stopPropagation();
                 setIsEditing(true);
               }}
-              className="p-1 hover:bg-gray-200 rounded"
+              className={`p-1 ${actionHoverBg} rounded`}
               title="Umbenennen"
             >
               <Edit size={14} />
             </button>
             <button
               onClick={handleDelete}
-              className="p-1 hover:bg-red-100 text-red-600 rounded"
+              className={`p-1 ${deleteHoverBg} text-red-600 rounded`}
               title="Löschen"
             >
               <Trash2 size={14} />

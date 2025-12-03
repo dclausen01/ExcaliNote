@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
 import { homedir } from 'os';
@@ -18,6 +18,14 @@ async function ensureExcalinoteDir() {
 let mainWindow: typeof BrowserWindow.prototype | null = null;
 
 function createWindow() {
+  // Menü-Leiste entfernen
+  Menu.setApplicationMenu(null);
+
+  // Icon-Pfad korrekt für dev und production
+  const iconPath = process.env.VITE_DEV_SERVER_URL 
+    ? path.join(__dirname, '../assets/excalinotes_icon.png')
+    : path.join(process.resourcesPath, 'app.asar', 'assets', 'excalinotes_icon.png');
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -26,7 +34,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    icon: path.join(__dirname, '../assets/excalinotes_icon.png')
+    icon: iconPath
   });
 
   // In development mode, load from vite dev server
