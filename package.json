@@ -1,6 +1,6 @@
 {
   "name": "excalinote",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OneNote-Alternative mit Excalidraw-Kern",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -46,21 +46,39 @@
     "appId": "com.excalinote.app",
     "productName": "ExcaliNote",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "assets"
     },
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
       "assets/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/excalinotes_icon.png"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "assets/excalinotes_icon.png"
     },
     "linux": {
-      "target": "AppImage"
+      "target": ["AppImage", "deb", "rpm"],
+      "icon": "assets/excalinotes_icon.png",
+      "category": "Office",
+      "desktop": {
+        "Name": "ExcaliNote",
+        "Comment": "OneNote-Alternative mit Excalidraw-Kern",
+        "Categories": "Office;Education;",
+        "StartupWMClass": "ExcaliNote"
+      }
     }
   }
 }

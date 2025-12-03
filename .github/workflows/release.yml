@@ -66,6 +66,10 @@ jobs:
         run: |
           sudo chmod +x /usr/local/lib/node_modules/electron-builder/node_modules/7zip-bin/linux/x64/7za
 
+      - name: Fix electron-builder permissions
+        run: |
+          sudo chmod -R 755 /usr/local/lib/node_modules/electron-builder/node_modules/app-builder-lib/templates/ || true
+
       - name: Get version
         id: get_version
         run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
