@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
-import renderer from 'vite-plugin-electron-renderer';
 import path from 'path';
 
 // https://vitejs.dev/config/
@@ -17,26 +16,20 @@ export default defineConfig({
         vite: {
           build: {
             sourcemap: true,
-            minify: process.env.NODE_ENV === 'production',
             outDir: 'dist-electron',
           },
         },
       },
       {
         entry: 'electron/preload.ts',
-        onstart(options) {
-          options.reload();
-        },
         vite: {
           build: {
             sourcemap: 'inline',
-            minify: process.env.NODE_ENV === 'production',
             outDir: 'dist-electron',
           },
         },
       },
     ]),
-    renderer(),
   ],
   resolve: {
     alias: {
@@ -46,5 +39,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+  },
+  build: {
+    outDir: 'dist',
   },
 });
