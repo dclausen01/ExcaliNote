@@ -27,6 +27,7 @@ function TreeItem({ item, level }: TreeItemProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
+  const [isDragOver, setIsDragOver] = useState(false);
   
   const { currentNote, setCurrentNote, deleteItem, renameItem } = useNotebookStore();
   const isSelected = currentNote === item.path;
@@ -78,6 +79,46 @@ function TreeItem({ item, level }: TreeItemProps) {
     }
   };
 
+  // Drag & Drop Handler
+  const handleDragStart = (e: React.DragEvent) => {
+    if (item.type === 'note') {
+      e.dataTransfer.setData('text/plain', item.path);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (item.type === 'folder') {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    if (item.type === 'folder') {
+      const draggedPath = e.dataTransfer.getData('text/plain');
+      
+      if (draggedPath && draggedPath !== item.path) {
+        try {
+          const draggedFileName = draggedPath.split('/').pop() || '';
+          const newPath = item.path ? `${item.path}/${draggedFileName}` : draggedFileName;
+          
+          await renameItem(draggedPath, newPath);
+        } catch (error) {
+          alert('Fehler beim Verschieben');
+        }
+      }
+    }
+  };
+
   const paddingLeft = level * 12 + 8;
 
   return (
@@ -86,9 +127,15 @@ function TreeItem({ item, level }: TreeItemProps) {
         className={`
           flex items-center gap-1 px-2 py-1.5 cursor-pointer rounded group
           ${isSelected ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}
+          ${isDragOver && item.type === 'folder' ? 'bg-green-100 border-2 border-green-300 border-dashed' : ''}
         `}
         style={{ paddingLeft: `${paddingLeft}px` }}
         onClick={handleClick}
+        draggable={item.type === 'note'}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       >
         {/* Chevron für Ordner */}
         {item.type === 'folder' && (

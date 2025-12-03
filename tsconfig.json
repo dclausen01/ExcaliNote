@@ -25,8 +25,11 @@
     "paths": {
       "@/*": ["./src/*"],
       "@electron/*": ["./electron/*"]
-    }
+    },
+
+    /* Types */
+    "types": ["node"]
   },
-  "include": ["src", "electron"],
+  "include": ["src", "electron", "src/types/electron.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

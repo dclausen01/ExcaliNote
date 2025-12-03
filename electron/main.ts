@@ -15,7 +15,7 @@ async function ensureExcalinoteDir() {
   }
 }
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: typeof BrowserWindow.prototype | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -26,6 +26,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+    icon: path.join(__dirname, '../assets/excalinotes_icon.png')
   });
 
   // In development mode, load from vite dev server

@@ -10,14 +10,29 @@ export default defineConfig({
     react(),
     electron([
       {
-        // Main process entry file
         entry: 'electron/main.ts',
+        onstart(options) {
+          options.startup();
+        },
+        vite: {
+          build: {
+            sourcemap: true,
+            minify: process.env.NODE_ENV === 'production',
+            outDir: 'dist-electron',
+          },
+        },
       },
       {
-        // Preload scripts
         entry: 'electron/preload.ts',
         onstart(options) {
           options.reload();
+        },
+        vite: {
+          build: {
+            sourcemap: 'inline',
+            minify: process.env.NODE_ENV === 'production',
+            outDir: 'dist-electron',
+          },
         },
       },
     ]),

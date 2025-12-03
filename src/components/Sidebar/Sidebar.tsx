@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNotebookStore } from '../../store/notebookStore';
 import FolderTree from './FolderTree';
 import { Plus, FolderPlus, FileText } from 'lucide-react';
+import type { NotebookItem } from '../../types';
 
 export default function Sidebar() {
   const { notebooks, createFolder, createNote } = useNotebookStore();
@@ -9,6 +10,27 @@ export default function Sidebar() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemType, setNewItemType] = useState<'folder' | 'note'>('note');
   const [selectedParent, setSelectedParent] = useState<string>('');
+
+  // Funktion um alle Ordner zu finden
+  const getAllFolders = (items: NotebookItem[], path: string = ''): { name: string; path: string }[] => {
+    const folders: { name: string; path: string }[] = [];
+    
+    for (const item of items) {
+      if (item.type === 'folder') {
+        folders.push({
+          name: path ? `${path}/${item.name}` : item.name,
+          path: path ? `${path}/${item.name}` : item.name,
+        });
+        
+        if (item.children) {
+          const childFolders = getAllFolders(item.children, path ? `${path}/${item.name}` : item.name);
+          folders.push(...childFolders);
+        }
+      }
+    }
+    
+    return folders;
+  };
 
   const handleCreate = async () => {
     if (!newItemName.trim()) return;
@@ -29,6 +51,8 @@ export default function Sidebar() {
       alert('Fehler beim Erstellen des Elements');
     }
   };
+  
+  const allFolders = getAllFolders(notebooks);
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -69,6 +93,27 @@ export default function Sidebar() {
           <div className="text-sm font-medium text-gray-700 mb-2">
             {newItemType === 'folder' ? 'Neuer Ordner' : 'Neue Notiz'}
           </div>
+          
+          {/* Parent Folder Selection */}
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Speicherort:
+            </label>
+            <select
+              value={selectedParent}
+              onChange={(e) => setSelectedParent(e.target.value)}
+              className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            >
+              <option value="">Hauptverzeichnis</option>
+              {allFolders.map((folder) => (
+                <option key={folder.path} value={folder.path}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Name Input */}
           <input
             type="text"
             value={newItemName}
@@ -84,6 +129,7 @@ export default function Sidebar() {
             className="w-full px-2 py-1 border border-gray-300 rounded text-sm mb-2"
             autoFocus
           />
+          
           <div className="flex gap-2">
             <button
               onClick={handleCreate}
