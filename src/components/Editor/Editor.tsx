@@ -3,10 +3,15 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { useNotebookStore } from '../../store/notebookStore';
-import { FileText, Grid } from 'lucide-react';
+import { FileText, Grid, Menu } from 'lucide-react';
 import { logger } from '../../utils/logger';
 
-export default function Editor() {
+interface EditorProps {
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+}
+
+export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: EditorProps) {
   const { currentNote, notebooks, saveNote, setTheme, isLoading } = useNotebookStore();
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [sceneData, setSceneData] = useState<any>(null);
@@ -107,13 +112,18 @@ export default function Editor() {
     setGridEnabled(!gridEnabled);
   };
 
+  // Sidebar Toggle Handler
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   if (!currentNote) {
     return (
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
             <img 
-              src="./assets/excalinotes_banner.png" 
+              src="/assets/excalinotes_banner.png" 
               alt="ExcaliNote Banner" 
               className="mx-auto max-w-full h-auto opacity-90"
               style={{ maxHeight: '300px' }}
@@ -133,8 +143,18 @@ export default function Editor() {
 
   return (
     <div className="flex-1 h-full flex flex-col">
-      {/* Toolbar mit Grid Toggle und Save Status */}
+      {/* Toolbar mit Grid Toggle, Save Status und Sidebar Toggle */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4">
+        {/* Sidebar Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          className="flex items-center gap-2 px-3 py-1.5 rounded text-sm transition bg-gray-100 text-gray-700 hover:bg-gray-200"
+          title={sidebarCollapsed ? 'Sidebar anzeigen' : 'Sidebar ausblenden'}
+        >
+          <Menu size={16} />
+          <span>{sidebarCollapsed ? 'Sidebar öffnen' : 'Sidebar schließen'}</span>
+        </button>
+        
         <button
           onClick={toggleGrid}
           className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
