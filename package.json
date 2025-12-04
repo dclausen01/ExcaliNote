@@ -3,6 +3,8 @@
   "version": "0.1.4",
   "description": "OneNote-Alternative mit Excalidraw-Kern",
   "main": "dist-electron/main.js",
+  "author": "D. Clausen <d.clausen@example.com>",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build && electron-builder",
@@ -18,8 +20,6 @@
     "notes",
     "whiteboard"
   ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "@excalidraw/excalidraw": "^0.17.0",
     "lucide-react": "^0.555.0",
