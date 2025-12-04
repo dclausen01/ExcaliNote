@@ -152,7 +152,7 @@ jobs:
           echo "Found previous version: $PREV_VERSION"
 
       - name: Create Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && !inputs.test_build)
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

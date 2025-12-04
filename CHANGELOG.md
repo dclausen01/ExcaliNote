@@ -1,5 +1,42 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.1.6 - 12/4/2025
+
+### 🔧 CI/CD Fixes & Improvements
+
+#### ✅ **GitHub Actions Release Workflow - Fixed:**
+
+- **Release Creation Fixed:** GitHub Actions workflow now properly creates releases
+  - Added `permissions: contents: write` to enable release creation
+  - Fixed conditional to support manual workflow triggers (`workflow_dispatch`)
+  - Releases now work both on push to main and manual triggers
+
+#### 🚀 **Workflow Improvements:**
+
+- **Manual Trigger Support:** Workflow can now be triggered manually from GitHub Actions
+  - Previous: Only triggered on push, but release step was skipped on manual trigger
+  - Now: Release is created on both push and manual trigger (unless test_build is true)
+  - Better flexibility for release management
+
+#### 🛡️ **Permissions & Security:**
+
+- **Explicit Permissions:** Added workflow-level permissions for better security
+  - `contents: write` permission explicitly granted
+  - Follows GitHub's new security model requiring explicit permission declarations
+
+### 📁 **Changed Files:**
+
+- `.github/workflows/release.yml` - Permission block added, conditional updated
+- `package.json` - Version bumped to 0.1.6
+
+### 🎯 **Impact:**
+
+- **Working Releases:** GitHub releases are now properly created with all platform artifacts
+- **Better CI/CD:** More reliable and flexible release workflow
+- **Security Compliance:** Follows GitHub Actions best practices for permissions
+
+---
+
 ## Version 0.1.4 - 12/4/2025
 
 ### 🚀 Major Code Quality & Performance Improvements
