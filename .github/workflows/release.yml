@@ -137,8 +137,16 @@ jobs:
         id: get_previous_version
         run: |
           git fetch --tags
-          PREV_TAG=$(git describe --tags --abbrev=0 $(git rev-list --tags --skip=1 --max-count=1))
-          echo "previous_version=${PREV_TAG#v}" >> $GITHUB_OUTPUT
+          # Find the most recent tag, or use a fallback if no tags exist
+          PREV_TAG=$(git tag | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
+          if [ -z "$PREV_TAG" ]; then
+            # If no tags exist, use the first commit hash as previous version
+            PREV_TAG=$(git log --format=%H | tail -1)
+          fi
+          # Remove 'v' prefix if present
+          PREV_VERSION=${PREV_TAG#v}
+          echo "previous_version=${PREV_VERSION}" >> $GITHUB_OUTPUT
+          echo "Found previous version: $PREV_VERSION"
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
