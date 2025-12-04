@@ -71,19 +71,10 @@
       "target": "dmg",
       "icon": "assets/excalinotes_icon.png"
     },
-    "linux": [
-      {
-        "target": ["AppImage", "deb", "rpm"],
-        "icon": "assets/excalinotes_icon.png",
-        "category": "Office",
-        "arch": ["x64"]
-      },
-      {
-        "target": ["AppImage"],
-        "icon": "assets/excalinotes_icon.png",
-        "category": "Office",
-        "arch": ["arm64"]
-      }
-    ]
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "icon": "assets/excalinotes_icon.png",
+      "category": "Office"
+    }
   }
 }
