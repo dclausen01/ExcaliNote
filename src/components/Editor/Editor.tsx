@@ -3,8 +3,9 @@ import { Excalidraw } from '@excalidraw/excalidraw';
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { useNotebookStore } from '../../store/notebookStore';
-import { FileText, Grid, Menu } from 'lucide-react';
+import { FileText, Grid, Menu, Sun, Moon } from 'lucide-react';
 import { logger } from '../../utils/logger';
+import { getBannerPath } from '../../utils/assets';
 
 interface EditorProps {
   sidebarCollapsed: boolean;
@@ -12,7 +13,7 @@ interface EditorProps {
 }
 
 export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: EditorProps) {
-  const { currentNote, notebooks, saveNote, setTheme, isLoading } = useNotebookStore();
+  const { currentNote, notebooks, saveNote, setTheme, isLoading, theme } = useNotebookStore();
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [sceneData, setSceneData] = useState<any>(null);
   const [gridEnabled, setGridEnabled] = useState(false);
@@ -21,6 +22,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   
   // useRef für Debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousElementsRef = useRef<readonly ExcalidrawElement[]>([]);
 
   // Excalidraw API bereit - safe update
   useEffect(() => {
@@ -65,7 +67,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
     };
   }, []);
 
-  // Auto-Save: Änderungen automatisch speichern
+  // Auto-Save: Änderungen automatisch speichern (nur bei Canvas-Änderungen)
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!currentNote) return;
@@ -75,41 +77,61 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         setTheme(appState.theme as 'light' | 'dark');
       }
 
-      const dataToSave = {
-        elements,
-        appState: {
-          viewBackgroundColor: appState.viewBackgroundColor,
-          currentItemFontFamily: appState.currentItemFontFamily,
-          currentItemFontSize: appState.currentItemFontSize,
-          currentItemStrokeColor: appState.currentItemStrokeColor,
-          currentItemBackgroundColor: appState.currentItemBackgroundColor,
-          currentItemFillStyle: appState.currentItemFillStyle,
-          currentItemStrokeWidth: appState.currentItemStrokeWidth,
-          currentItemRoughness: appState.currentItemRoughness,
-          currentItemOpacity: appState.currentItemOpacity,
-        },
-        files,
-      };
+      // Prüfe ob sich die Elements tatsächlich geändert haben (nur bei Canvas-Änderungen speichern)
+      const hasElementsChanged = elements.length !== previousElementsRef.current.length ||
+        elements.some((element, index) => {
+          const prevElement = previousElementsRef.current[index];
+          return !prevElement || 
+                 prevElement.x !== element.x ||
+                 prevElement.y !== element.y ||
+                 prevElement.width !== element.width ||
+                 prevElement.height !== element.height ||
+                 prevElement.type !== element.type;
+        });
 
-      // Setze Status auf unsaved
-      setSaveStatus('unsaved');
+      // Nur bei tatsächlichen Element-Änderungen speichern, nicht bei Theme-Änderungen
+      if (hasElementsChanged) {
+        const dataToSave = {
+          elements,
+          appState: {
+            viewBackgroundColor: appState.viewBackgroundColor,
+            currentItemFontFamily: appState.currentItemFontFamily,
+            currentItemFontSize: appState.currentItemFontSize,
+            currentItemStrokeColor: appState.currentItemStrokeColor,
+            currentItemBackgroundColor: appState.currentItemBackgroundColor,
+            currentItemFillStyle: appState.currentItemFillStyle,
+            currentItemStrokeWidth: appState.currentItemStrokeWidth,
+            currentItemRoughness: appState.currentItemRoughness,
+            currentItemOpacity: appState.currentItemOpacity,
+          },
+          files,
+        };
 
-      // Clear existing timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+        // Setze Status auf unsaved
+        setSaveStatus('unsaved');
+
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+
+        // Debounced save (500ms)
+        saveTimeoutRef.current = setTimeout(async () => {
+          setSaveStatus('saving');
+          try {
+            await saveNote(currentNote, dataToSave);
+            setSaveStatus('saved');
+            // Update previous elements reference nach erfolgreichem Speichern
+            previousElementsRef.current = elements;
+          } catch (error) {
+            logger.error('Fehler beim Speichern', { currentNote, error });
+            setSaveStatus('unsaved');
+          }
+        }, 500);
       }
 
-      // Debounced save (500ms)
-      saveTimeoutRef.current = setTimeout(async () => {
-        setSaveStatus('saving');
-        try {
-          await saveNote(currentNote, dataToSave);
-          setSaveStatus('saved');
-        } catch (error) {
-          logger.error('Fehler beim Speichern', { currentNote, error });
-          setSaveStatus('unsaved');
-        }
-      }, 500);
+      // Update previous elements reference
+      previousElementsRef.current = elements;
     },
     [currentNote, saveNote, setTheme]
   );
@@ -122,6 +144,18 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   // Sidebar Toggle Handler
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
+  };
+
+  // Theme Toggle Handler
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    // Optional: Excalidraw Theme setzen
+    if (excalidrawAPI) {
+      excalidrawAPI.updateScene({
+        appState: { theme: newTheme }
+      });
+    }
   };
 
   // Excalidraw API Handler - sicherer callback
@@ -141,7 +175,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
             <img 
-              src="/assets/excalinotes_banner.png" 
+              src={getBannerPath()} 
               alt="ExcaliNote Banner" 
               className="mx-auto max-w-full h-auto opacity-90"
               style={{ maxHeight: '300px' }}
@@ -161,12 +195,20 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
 
   return (
     <div className="flex-1 h-full flex flex-col">
-      {/* Toolbar mit Grid Toggle, Save Status und Sidebar Toggle */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4">
+      {/* Toolbar mit Grid Toggle, Save Status, Sidebar Toggle und Theme Toggle */}
+      <div className={`border-b px-4 py-2 flex items-center gap-4 ${
+        theme === 'dark' 
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
+      }`}>
         {/* Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className="flex items-center gap-2 px-3 py-1.5 rounded text-sm transition bg-gray-100 text-gray-700 hover:bg-gray-200"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
+            theme === 'dark'
+              ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
           title={sidebarCollapsed ? 'Sidebar anzeigen' : 'Sidebar ausblenden'}
         >
           <Menu size={16} />
@@ -178,7 +220,9 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
           className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
             gridEnabled 
               ? 'bg-blue-500 text-white hover:bg-blue-600' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : theme === 'dark'
+                ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           title="Grid anzeigen/ausblenden"
         >
@@ -186,10 +230,26 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
           <span>{gridEnabled ? 'Grid an' : 'Grid aus'}</span>
         </button>
         
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
+            theme === 'dark'
+              ? 'bg-yellow-600 text-yellow-100 hover:bg-yellow-700'
+              : 'bg-gray-700 text-gray-100 hover:bg-gray-800'
+          }`}
+          title={`${theme === 'light' ? 'Dunkles' : 'Helles'} Theme aktivieren`}
+        >
+          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+        </button>
+        
         {/* Save Status Indicator */}
         <div className="flex items-center gap-2">
           {saveStatus === 'saving' && (
-            <span className="text-sm text-gray-500">Speichert...</span>
+            <span className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>Speichert...</span>
           )}
           {saveStatus === 'saved' && (
             <span className="text-sm text-green-600">✓ Gespeichert</span>
@@ -203,7 +263,9 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         {isLoading && (
           <div className="flex items-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-            <span className="text-sm text-gray-500">Lade Ordnerstruktur...</span>
+            <span className={`text-sm ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>Lade Ordnerstruktur...</span>
           </div>
         )}
       </div>
