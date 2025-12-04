@@ -25,11 +25,20 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousElementsRef = useRef<readonly ExcalidrawElement[]>([]);
 
-  // Excalidraw API bereit - safe update
+  // Excalidraw API bereit - safe update (inklusive Files/Bilder)
   useEffect(() => {
     if (excalidrawAPI && sceneData && isExcalidrawReady) {
       try {
-        excalidrawAPI.updateScene(sceneData);
+        // Update Scene mit allen Daten inklusive Files
+        excalidrawAPI.updateScene({
+          elements: sceneData.elements,
+          appState: sceneData.appState,
+        });
+        
+        // Update Files separat, falls vorhanden
+        if (sceneData.files && Object.keys(sceneData.files).length > 0) {
+          excalidrawAPI.addFiles(Object.values(sceneData.files));
+        }
       } catch (error) {
         logger.error('Fehler beim Aktualisieren der Excalidraw-Scene', { error });
       }
@@ -193,7 +202,11 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
 
   if (!currentNote) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className={`flex-1 flex items-center justify-center ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-[#2B2520] to-[#1F1B18]' 
+          : 'bg-gradient-to-br from-[#F5F2E3] to-[#E8DFD0]'
+      }`}>
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
             <img 
@@ -203,11 +216,19 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
               style={{ maxHeight: '300px' }}
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Willkommen bei ExcaliNote</h1>
-          <p className="text-lg text-gray-600 mb-6">
+          <h1 className={`text-3xl font-bold mb-4 ${
+            theme === 'dark' ? 'text-[#E8DFD0]' : 'text-[#3D3530]'
+          }`}>
+            Willkommen bei ExcaliNote
+          </h1>
+          <p className={`text-lg mb-6 ${
+            theme === 'dark' ? 'text-[#C4B5A0]' : 'text-[#6B5D4F]'
+          }`}>
             Deine OneNote-Alternative mit Excalidraw-Kern
           </p>
-          <p className="text-sm text-gray-500">
+          <p className={`text-sm ${
+            theme === 'dark' ? 'text-[#A39988]' : 'text-[#8B7D6F]'
+          }`}>
             Wähle eine Notiz aus dem linken Menü aus oder erstelle eine neue, um zu beginnen.
           </p>
         </div>
@@ -220,16 +241,16 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
       {/* Toolbar mit Grid Toggle, Save Status, Sidebar Toggle und Theme Toggle */}
       <div className={`border-b px-4 py-2 flex items-center gap-4 ${
         theme === 'dark' 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-white border-gray-200'
+          ? 'bg-[#1F1B18] border-[#3D3530]' 
+          : 'bg-[#FDFBF7] border-[#E8E4DB]'
       }`}>
         {/* Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
           className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
             theme === 'dark'
-              ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-[#2B2520] text-[#E8DFD0] hover:bg-[#3D3530]'
+              : 'bg-[#F5F2E3] text-[#3D3530] hover:bg-[#E8DFD0]'
           }`}
           title={sidebarCollapsed ? 'Sidebar anzeigen' : 'Sidebar ausblenden'}
         >
@@ -243,8 +264,8 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
             gridEnabled 
               ? 'bg-blue-500 text-white hover:bg-blue-600' 
               : theme === 'dark'
-                ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-[#2B2520] text-[#E8DFD0] hover:bg-[#3D3530]'
+                : 'bg-[#F5F2E3] text-[#3D3530] hover:bg-[#E8DFD0]'
           }`}
           title="Grid anzeigen/ausblenden"
         >

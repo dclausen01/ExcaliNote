@@ -18,14 +18,14 @@ export default function Sidebar() {
   
   // Dark/Light Mode Farben
   const isDark = theme === 'dark';
-  const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
-  const borderColor = isDark ? 'border-gray-700' : 'border-gray-200';
-  const textColor = isDark ? 'text-gray-100' : 'text-gray-800';
-  const textSecondary = isDark ? 'text-gray-400' : 'text-gray-500';
-  const hoverBg = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
-  const inputBg = isDark ? 'bg-gray-800' : 'bg-white';
-  const inputBorder = isDark ? 'border-gray-600' : 'border-gray-300';
-  const dialogBg = isDark ? 'bg-gray-800' : 'bg-gray-50';
+  const bgColor = isDark ? 'bg-[#1F1B18]' : 'bg-[#FDFBF7]';
+  const borderColor = isDark ? 'border-[#3D3530]' : 'border-[#E8E4DB]';
+  const textColor = isDark ? 'text-[#E8DFD0]' : 'text-[#3D3530]';
+  const textSecondary = isDark ? 'text-[#A39988]' : 'text-[#6B5D4F]';
+  const hoverBg = isDark ? 'hover:bg-[#2B2520]' : 'hover:bg-[#F5F2E3]';
+  const inputBg = isDark ? 'bg-[#2B2520]' : 'bg-white';
+  const inputBorder = isDark ? 'border-[#3D3530]' : 'border-[#D4CFC4]';
+  const dialogBg = isDark ? 'bg-[#2B2520]' : 'bg-[#F5F2E3]';
 
   // Funktion um alle Ordner zu finden (mit useMemo für Performance)
   const allFolders = useMemo(() => {

@@ -7,6 +7,7 @@ import UpdateNotification from './components/UpdateNotification';
 
 function App() {
   const loadNotebooks = useNotebookStore((state) => state.loadNotebooks);
+  const theme = useNotebookStore((state) => state.theme);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -16,7 +17,9 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-screen overflow-hidden bg-gray-50">
+      <div className={`flex h-screen w-screen overflow-hidden ${
+        theme === 'dark' ? 'bg-[#2B2520]' : 'bg-[#F5F2E3]'
+      }`}>
         {/* Sidebar - nur anzeigen wenn nicht collapsed */}
         {!sidebarCollapsed && (
           <Sidebar />
