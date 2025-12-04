@@ -1,6 +1,6 @@
 {
   "name": "excalinote",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "OneNote-Alternative mit Excalidraw-Kern",
   "main": "dist-electron/main.js",
   "author": "D. Clausen <d.clausen@example.com>",

@@ -1,294 +1,96 @@
 name: Release
+
 on:
   push:
-    branches: [main]
-    paths:
-      - "package.json"
+    branches:
+      - main
   workflow_dispatch:
     inputs:
-      test_build:
-        description: "Create test build (will not publish to releases)"
-        required: false
-        default: false
-        type: boolean
-  pull_request:
-    branches: [main]
-    paths:
-      - "package.json"
+      version:
+        description: "Version number (e.g., 0.1.5)"
+        required: true
+        type: string
 
 jobs:
-  build-linux-x64:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-    env:
-      NODE_GYP_FORCE_PYTHON: "python3"
-      npm_config_node_gyp: "/usr/local/lib/node_modules/node-gyp/bin/node-gyp.js"
-      npm_config_target: "31.0.0"
-      npm_config_runtime: "electron"
-      npm_config_arch: "x64"
-      npm_config_target_arch: "x64"
-      npm_config_disturl: "https://electronjs.org/headers"
-      npm_config_python: "python3"
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev gcc g++ make libarchive-tools rpm fakeroot
-
-      - name: Install dependencies
-        run: |
-          sudo npm install -g node-gyp@9.4.0
-          npm install
-          sudo npm install -g electron@31.0.0 electron-builder
-          npm rebuild sqlite3 --build-from-source
-          npm rebuild app-builder-bin
-
-      - name: Set 7zip permissions
-        run: |
-          sudo chmod +x /usr/local/lib/node_modules/electron-builder/node_modules/7zip-bin/linux/x64/7za
-
-      - name: Fix electron-builder permissions
-        run: |
-          sudo chmod -R 755 /usr/local/lib/node_modules/electron-builder/node_modules/app-builder-lib/templates/ || true
-
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Build Linux (x64)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: false
-        run: |
-          CI=false npm run build
-          electron-builder --linux --x64
-
-      - name: Upload x64 artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-x64-artifacts
-          path: |
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.pacman
-            release/*.yml
-
-  create-release:
-    runs-on: ubuntu-latest
-    needs: [build-linux-x64, build-mac, build-windows]
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Download Linux x64 artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-x64-artifacts
-          path: dist-linux-x64/
-
-      - name: Download Mac artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: mac-artifacts
-          path: dist-mac/
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-artifacts
-          path: dist-windows/
-
-      - name: Combine all artifacts
-        run: |
-          mkdir -p release
-          cp -r dist-linux-x64/* release/ 2>/dev/null || true
-          cp -r dist-mac/* release/ 2>/dev/null || true
-          cp -r dist-windows/* release/ 2>/dev/null || true
-          echo "Combined artifacts:"
-          ls -la release/
-
-      - name: Get previous version
-        id: get_previous_version
-        run: |
-          git fetch --tags
-          # Find the most recent tag, or use a fallback if no tags exist
-          PREV_TAG=$(git tag | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -1)
-          if [ -z "$PREV_TAG" ]; then
-            # If no tags exist, use the first commit hash as previous version
-            PREV_TAG=$(git log --format=%H | tail -1)
-          fi
-          # Remove 'v' prefix if present
-          PREV_VERSION=${PREV_TAG#v}
-          echo "previous_version=${PREV_VERSION}" >> $GITHUB_OUTPUT
-          echo "Found previous version: $PREV_VERSION"
-
-      - name: Create Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          draft: true
-          name: ${{ steps.get_version.outputs.version }}
-          tag_name: v${{ steps.get_version.outputs.version }}
-          body: |
-            **Full Changelog**: https://github.com/dclausen01/ExcaliNote/compare/v${{ steps.get_previous_version.outputs.previous_version }}...v${{ steps.get_version.outputs.version }}
-          files: |
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.pacman
-            release/*.dmg
-            release/*.dmg.blockmap
-            release/*.exe
-            release/*.exe.blockmap
-            release/*.msi
-            release/*.yml
-
-      - name: Upload Test Build Artifacts
-        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-build-all-platforms-${{ steps.get_version.outputs.version }}
-          path: |
-            release/*.AppImage
-            release/*.deb
-            release/*.rpm
-            release/*.pacman
-            release/*.dmg
-            release/*.dmg.blockmap
-            release/*.exe
-            release/*.exe.blockmap
-            release/*.msi
-            release/*.yml
-          retention-days: 7
-
-  build-mac:
-    runs-on: macos-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: |
-          npm install
-          sudo npm install -g electron@31.0.0 electron-builder
-          npm rebuild sqlite3 --build-from-source
-          npm rebuild app-builder-bin
-
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Build Mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: false
-        run: |
-          npm run build
-          electron-builder --mac --x64 --arm64
-
-      - name: Upload Mac artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-artifacts
-          path: |
-            release/*.dmg
-            release/*.dmg.blockmap
-            release/*.yml
-
-  build-windows:
+  release:
+    name: Create Release
     runs-on: windows-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
+
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
-          python-version: "3.11"
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
-        env:
-          npm_config_build_from_source: false
+        run: npm ci
+
+      - name: Build Application
+        run: npm run build
+
+      - name: Build Electron
+        run: npm run electron:build
+
+      - name: Determine Version
+        id: version
         run: |
-          npm install
-          npm install -g electron@31.0.0 electron-builder
-          npm rebuild app-builder-bin
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Build Windows
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: false
+      - name: Extract Changelog
+        id: changelog
         run: |
-          npm run build
-          electron-builder --win --x64
+          # Extract release notes from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Get the first version section from CHANGELOG
+            changelog_content=$(awk '/^## Version [0-9]/ {found=1; print ""; next} found && /^## / {exit} found' CHANGELOG.md || echo "")
+            echo "changes<<EOF" >> $GITHUB_OUTPUT
+            echo "$changelog_content" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "changes=Release ${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: windows-artifacts
-          path: |
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## 🚀 ExcaliNote Release v${{ steps.version.outputs.version }}
+
+            ### 📦 Changes
+
+            ${{ steps.changelog.outputs.changes }}
+
+            ### 📁 Download
+
+            Download the latest release for your platform:
+
+            - **Windows**: `.exe` installer
+            - **macOS**: `.dmg` file  
+            - **Linux**: `.AppImage`, `.deb` or `.rpm` package
+
+            ### 🔗 Installation
+
+            See [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions.
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
             release/*.exe
-            release/*.exe.blockmap
-            release/*.msi
-            release/*.yml
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+          make_latest: true
