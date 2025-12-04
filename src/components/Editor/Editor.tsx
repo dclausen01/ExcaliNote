@@ -5,7 +5,7 @@ import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/exca
 import { useNotebookStore } from '../../store/notebookStore';
 import { FileText, Grid, Menu, Sun, Moon } from 'lucide-react';
 import { logger } from '../../utils/logger';
-import { getBannerPath } from '../../utils/assets';
+import bannerImage from '../../assets/excalinotes_banner.png';
 
 interface EditorProps {
   sidebarCollapsed: boolean;
@@ -175,7 +175,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
             <img 
-              src={getBannerPath()} 
+              src={bannerImage} 
               alt="ExcaliNote Banner" 
               className="mx-auto max-w-full h-auto opacity-90"
               style={{ maxHeight: '300px' }}
