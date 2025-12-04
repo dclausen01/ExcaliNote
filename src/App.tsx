@@ -3,6 +3,7 @@ import { useNotebookStore } from './store/notebookStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Sidebar from './components/Sidebar/Sidebar';
 import Editor from './components/Editor/Editor';
+import UpdateNotification from './components/UpdateNotification';
 
 function App() {
   const loadNotebooks = useNotebookStore((state) => state.loadNotebooks);
@@ -28,6 +29,9 @@ function App() {
             setSidebarCollapsed={setSidebarCollapsed}
           />
         </div>
+        
+        {/* Update-Benachrichtigung */}
+        <UpdateNotification />
       </div>
     </ErrorBoundary>
   );

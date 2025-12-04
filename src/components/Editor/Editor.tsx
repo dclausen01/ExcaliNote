@@ -5,6 +5,7 @@ import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/exca
 import { useNotebookStore } from '../../store/notebookStore';
 import { FileText, Grid, Menu, Sun, Moon } from 'lucide-react';
 import { logger } from '../../utils/logger';
+import { saveImages, loadImages, cleanupUnusedImages } from '../../utils/imageStorage';
 import bannerImage from '../../assets/excalinotes_banner.png';
 
 interface EditorProps {
@@ -43,7 +44,15 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
       try {
         const content = await window.electron.fs.readFile(currentNote);
         const data = JSON.parse(content);
-        setSceneData(data);
+        
+        // Lade Bilder separat
+        const images = await loadImages(currentNote);
+        
+        // Kombiniere Scene-Daten mit Bildern
+        setSceneData({
+          ...data,
+          files: images
+        });
       } catch (error) {
         logger.error('Fehler beim Laden der Notiz', { currentNote, error });
         // Neue leere Notiz
@@ -119,7 +128,20 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         saveTimeoutRef.current = setTimeout(async () => {
           setSaveStatus('saving');
           try {
-            await saveNote(currentNote, dataToSave);
+            // Speichere Bilder separat
+            await saveImages(currentNote, files);
+            
+            // Cleanup: Lösche ungenutzte Bilder
+            await cleanupUnusedImages(currentNote, files);
+            
+            // Speichere Notiz ohne Bilder (nur Referenzen)
+            const dataWithoutImages = {
+              elements,
+              appState: dataToSave.appState,
+              files: {}, // Keine Bilder im JSON
+            };
+            
+            await saveNote(currentNote, dataWithoutImages);
             setSaveStatus('saved');
             // Update previous elements reference nach erfolgreichem Speichern
             previousElementsRef.current = elements;
