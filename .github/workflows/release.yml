@@ -93,132 +93,9 @@ jobs:
             release/*.pacman
             release/*.yml
 
-  build-linux-arm64:
-    runs-on: ubuntu-24.04-arm
-    env:
-      NODE_GYP_FORCE_PYTHON: "python3"
-      npm_config_node_gyp: "/usr/local/lib/node_modules/node-gyp/bin/node-gyp.js"
-      npm_config_target: "31.0.0"
-      npm_config_runtime: "electron"
-      npm_config_arch: "arm64"
-      npm_config_target_arch: "arm64"
-      npm_config_disturl: "https://electronjs.org/headers"
-      npm_config_python: "python3"
-      npm_config_target_platform: "linux"
-    steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev gcc g++ make libarchive-tools
-
-      - name: Install dependencies
-        run: |
-          sudo npm install -g node-gyp@9.4.0
-          npm install
-          sudo npm install -g electron@31.0.0 electron-builder
-          npm rebuild sqlite3 --build-from-source
-          npm rebuild app-builder-bin
-
-      - name: Set 7zip permissions
-        run: |
-          sudo chmod +x /usr/local/lib/node_modules/electron-builder/node_modules/7zip-bin/linux/arm64/7za
-
-      - name: Get version
-        id: get_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
-      - name: Build React app
-        run: CI=false npm run build
-
-      - name: Create ARM64 config
-        run: |
-          cat > electron-builder-arm64.json << 'EOF'
-          {
-            "appId": "com.excalinote.app",
-            "productName": "ExcaliNote",
-            "artifactName": "ExcaliNote-${version}-${arch}.${ext}",
-            "files": [
-              "dist/**/*",
-              "dist-electron/**/*"
-            ],
-            "extraResources": [
-              {
-                "from": "assets",
-                "to": "assets",
-                "filter": ["**/*"]
-              }
-            ],
-            "directories": {
-              "buildResources": "assets"
-            },
-            "linux": {
-              "target": ["AppImage"],
-              "icon": "assets/excalinotes_icon.png",
-              "category": "Office",
-              "desktop": {
-                "entry": {
-                  "Name": "ExcaliNote",
-                  "Comment": "OneNote-Alternative mit Excalidraw-Kern",
-                  "Categories": "Office;Education;",
-                  "StartupWMClass": "ExcaliNote"
-                }
-              }
-            },
-            "publish": {
-              "provider": "github",
-              "owner": "dclausen01",
-              "repo": "ExcaliNote"
-            }
-          }
-          EOF
-
-      - name: Build Linux ARM64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI: false
-        run: |
-          electron-builder --linux --arm64 --config electron-builder-arm64.json
-
-      - name: Verify ARM64 binaries
-        run: |
-          echo "Checking built ARM64 binaries:"
-          ls -la release/
-          for file in release/*.AppImage; do
-            if [ -f "$file" ]; then
-              echo "File: $file"
-              file "$file" || true
-            fi
-          done
-
-      - name: Upload ARM64 artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-arm64-artifacts
-          path: |
-            release/*.AppImage
-            release/*.yml
-
   create-release:
     runs-on: ubuntu-latest
-    needs: [build-linux-x64, build-linux-arm64, build-mac, build-windows]
+    needs: [build-linux-x64, build-mac, build-windows]
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
@@ -234,12 +111,6 @@ jobs:
         with:
           name: linux-x64-artifacts
           path: dist-linux-x64/
-
-      - name: Download Linux ARM64 artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-arm64-artifacts
-          path: dist-linux-arm64/
 
       - name: Download Mac artifacts
         uses: actions/download-artifact@v4
@@ -257,7 +128,6 @@ jobs:
         run: |
           mkdir -p release
           cp -r dist-linux-x64/* release/ 2>/dev/null || true
-          cp -r dist-linux-arm64/* release/ 2>/dev/null || true
           cp -r dist-mac/* release/ 2>/dev/null || true
           cp -r dist-windows/* release/ 2>/dev/null || true
           echo "Combined artifacts:"
