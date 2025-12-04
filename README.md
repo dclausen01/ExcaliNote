@@ -1,5 +1,6 @@
 # ExcaliNote 📝✨
 
+![Banner](assets/excalinotes_banner.png)
 Eine moderne OneNote-Alternative mit Excalidraw als Zeichenkern – perfekt für handschriftliche Notizen, Skizzen und Diagramme.
 
 ![ExcaliNote Banner](https://img.shields.io/badge/Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)
