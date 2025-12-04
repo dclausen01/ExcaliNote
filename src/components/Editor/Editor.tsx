@@ -17,9 +17,21 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   const [sceneData, setSceneData] = useState<any>(null);
   const [gridEnabled, setGridEnabled] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  const [isExcalidrawReady, setIsExcalidrawReady] = useState(false);
   
   // useRef für Debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Excalidraw API bereit - safe update
+  useEffect(() => {
+    if (excalidrawAPI && sceneData && isExcalidrawReady) {
+      try {
+        excalidrawAPI.updateScene(sceneData);
+      } catch (error) {
+        logger.error('Fehler beim Aktualisieren der Excalidraw-Scene', { error });
+      }
+    }
+  }, [excalidrawAPI, sceneData, isExcalidrawReady]);
 
   // Aktuelle Notiz laden
   useEffect(() => {
@@ -30,11 +42,6 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         const content = await window.electron.fs.readFile(currentNote);
         const data = JSON.parse(content);
         setSceneData(data);
-        
-        // Excalidraw Scene aktualisieren
-        if (excalidrawAPI) {
-          excalidrawAPI.updateScene(data);
-        }
       } catch (error) {
         logger.error('Fehler beim Laden der Notiz', { currentNote, error });
         // Neue leere Notiz
@@ -47,7 +54,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
     };
 
     loadCurrentNote();
-  }, [currentNote, excalidrawAPI]);
+  }, [currentNote]);
 
   // Cleanup für Debouncing
   useEffect(() => {
@@ -116,6 +123,17 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+
+  // Excalidraw API Handler - sicherer callback
+  const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    try {
+      setExcalidrawAPI(api);
+      setIsExcalidrawReady(true);
+    } catch (error) {
+      logger.error('Fehler beim Initialisieren der Excalidraw API', { error });
+      setIsExcalidrawReady(false);
+    }
+  }, []);
 
   if (!currentNote) {
     return (
@@ -193,7 +211,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
       {/* Excalidraw Editor */}
       <div className="flex-1">
         <Excalidraw
-          excalidrawAPI={(api) => setExcalidrawAPI(api)}
+          excalidrawAPI={handleExcalidrawAPI}
           onChange={handleChange}
           initialData={sceneData}
           UIOptions={{
