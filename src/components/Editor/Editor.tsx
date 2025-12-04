@@ -1,15 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
-import { AppState, BinaryFiles } from '@excalidraw/excalidraw/types/types';
+import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { useNotebookStore } from '../../store/notebookStore';
 import { FileText, Grid } from 'lucide-react';
+import { logger } from '../../utils/logger';
 
 export default function Editor() {
-  const { currentNote, notebooks, saveNote, setTheme } = useNotebookStore();
-  const [excalidrawAPI, setExcalidrawAPI] = useState<any>(null);
+  const { currentNote, notebooks, saveNote, setTheme, isLoading } = useNotebookStore();
+  const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
   const [sceneData, setSceneData] = useState<any>(null);
   const [gridEnabled, setGridEnabled] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
+  
+  // useRef für Debouncing
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Aktuelle Notiz laden
   useEffect(() => {
@@ -26,7 +31,7 @@ export default function Editor() {
           excalidrawAPI.updateScene(data);
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Notiz:', error);
+        logger.error('Fehler beim Laden der Notiz', { currentNote, error });
         // Neue leere Notiz
         setSceneData({
           elements: [],
@@ -38,6 +43,15 @@ export default function Editor() {
 
     loadCurrentNote();
   }, [currentNote, excalidrawAPI]);
+
+  // Cleanup für Debouncing
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Auto-Save: Änderungen automatisch speichern
   const handleChange = useCallback(
@@ -65,12 +79,25 @@ export default function Editor() {
         files,
       };
 
-      // Debounced save (500ms)
-      const timeoutId = setTimeout(() => {
-        saveNote(currentNote, dataToSave);
-      }, 500);
+      // Setze Status auf unsaved
+      setSaveStatus('unsaved');
 
-      return () => clearTimeout(timeoutId);
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Debounced save (500ms)
+      saveTimeoutRef.current = setTimeout(async () => {
+        setSaveStatus('saving');
+        try {
+          await saveNote(currentNote, dataToSave);
+          setSaveStatus('saved');
+        } catch (error) {
+          logger.error('Fehler beim Speichern', { currentNote, error });
+          setSaveStatus('unsaved');
+        }
+      }, 500);
     },
     [currentNote, saveNote, setTheme]
   );
@@ -106,8 +133,8 @@ export default function Editor() {
 
   return (
     <div className="flex-1 h-full flex flex-col">
-      {/* Toolbar mit Grid Toggle */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-2">
+      {/* Toolbar mit Grid Toggle und Save Status */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4">
         <button
           onClick={toggleGrid}
           className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
@@ -120,6 +147,27 @@ export default function Editor() {
           <Grid size={16} />
           <span>{gridEnabled ? 'Grid an' : 'Grid aus'}</span>
         </button>
+        
+        {/* Save Status Indicator */}
+        <div className="flex items-center gap-2">
+          {saveStatus === 'saving' && (
+            <span className="text-sm text-gray-500">Speichert...</span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="text-sm text-green-600">✓ Gespeichert</span>
+          )}
+          {saveStatus === 'unsaved' && (
+            <span className="text-sm text-orange-500">● Nicht gespeichert</span>
+          )}
+        </div>
+        
+        {/* Loading Indicator für Ordnerstruktur */}
+        {isLoading && (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+            <span className="text-sm text-gray-500">Lade Ordnerstruktur...</span>
+          </div>
+        )}
       </div>
 
       {/* Excalidraw Editor */}

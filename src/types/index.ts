@@ -42,6 +42,9 @@ export interface NotebookStore {
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   
+  // Loading States
+  isLoading: boolean;
+  
   // Laden der Ordnerstruktur
   loadNotebooks: () => Promise<void>;
   

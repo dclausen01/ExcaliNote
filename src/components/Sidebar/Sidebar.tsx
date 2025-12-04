@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNotebookStore } from '../../store/notebookStore';
 import FolderTree from './FolderTree';
 import { Plus, FolderPlus, FileText } from 'lucide-react';
 import type { NotebookItem } from '../../types';
+
+// Hilfsfunktion: Pfade sicher zusammenfügen
+function joinPath(...parts: string[]): string {
+  return parts.filter(Boolean).join('/');
+}
 
 export default function Sidebar() {
   const { notebooks, createFolder, createNote, theme } = useNotebookStore();
@@ -22,26 +27,31 @@ export default function Sidebar() {
   const inputBorder = isDark ? 'border-gray-600' : 'border-gray-300';
   const dialogBg = isDark ? 'bg-gray-800' : 'bg-gray-50';
 
-  // Funktion um alle Ordner zu finden
-  const getAllFolders = (items: NotebookItem[], path: string = ''): { name: string; path: string }[] => {
-    const folders: { name: string; path: string }[] = [];
-    
-    for (const item of items) {
-      if (item.type === 'folder') {
-        folders.push({
-          name: path ? `${path}/${item.name}` : item.name,
-          path: path ? `${path}/${item.name}` : item.name,
-        });
-        
-        if (item.children) {
-          const childFolders = getAllFolders(item.children, path ? `${path}/${item.name}` : item.name);
-          folders.push(...childFolders);
+  // Funktion um alle Ordner zu finden (mit useMemo für Performance)
+  const allFolders = useMemo(() => {
+    const getAllFolders = (items: NotebookItem[], path: string = ''): { name: string; path: string }[] => {
+      const folders: { name: string; path: string }[] = [];
+      
+      for (const item of items) {
+        if (item.type === 'folder') {
+          const folderPath = joinPath(path, item.name);
+          folders.push({
+            name: folderPath,
+            path: folderPath,
+          });
+          
+          if (item.children) {
+            const childFolders = getAllFolders(item.children, folderPath);
+            folders.push(...childFolders);
+          }
         }
       }
-    }
+      
+      return folders;
+    };
     
-    return folders;
-  };
+    return getAllFolders(notebooks);
+  }, [notebooks]);
 
   const handleCreate = async () => {
     if (!newItemName.trim()) return;
@@ -62,8 +72,6 @@ export default function Sidebar() {
       alert('Fehler beim Erstellen des Elements');
     }
   };
-  
-  const allFolders = getAllFolders(notebooks);
 
   return (
     <div className={`w-64 ${bgColor} border-r ${borderColor} flex flex-col`}>

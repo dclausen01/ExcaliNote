@@ -15,6 +15,37 @@ async function ensureExcalinoteDir() {
   }
 }
 
+/**
+ * Validates and resolves a relative path to ensure it stays within the base directory.
+ * Prevents path traversal attacks.
+ * 
+ * @param relativePath - The relative path to validate
+ * @returns The resolved absolute path
+ * @throws {Error} If path traversal is detected or path is invalid
+ */
+function validateAndResolvePath(relativePath: string): string {
+  // Normalisiere den Pfad
+  const normalized = path.normalize(relativePath);
+  
+  // Verhindere absolute Pfade und parent directory traversal
+  if (path.isAbsolute(normalized) || normalized.startsWith('..')) {
+    throw new Error('Invalid path: Path traversal detected');
+  }
+  
+  // Erstelle den vollständigen Pfad
+  const fullPath = path.join(EXCALINOTE_DIR, normalized);
+  
+  // Stelle sicher, dass der resolved path innerhalb EXCALINOTE_DIR liegt
+  const resolvedPath = path.resolve(fullPath);
+  const resolvedBaseDir = path.resolve(EXCALINOTE_DIR);
+  
+  if (!resolvedPath.startsWith(resolvedBaseDir)) {
+    throw new Error('Invalid path: Outside of base directory');
+  }
+  
+  return resolvedPath;
+}
+
 let mainWindow: typeof BrowserWindow.prototype | null = null;
 
 function createWindow() {
@@ -73,7 +104,7 @@ app.on('window-all-closed', () => {
 // Verzeichnisstruktur lesen
 ipcMain.handle('fs:readDir', async (_, dirPath: string) => {
   try {
-    const fullPath = path.join(EXCALINOTE_DIR, dirPath);
+    const fullPath = validateAndResolvePath(dirPath);
     const entries = await fs.readdir(fullPath, { withFileTypes: true });
     
     return entries.map(entry => ({
@@ -90,7 +121,7 @@ ipcMain.handle('fs:readDir', async (_, dirPath: string) => {
 // Datei lesen
 ipcMain.handle('fs:readFile', async (_, filePath: string) => {
   try {
-    const fullPath = path.join(EXCALINOTE_DIR, filePath);
+    const fullPath = validateAndResolvePath(filePath);
     const content = await fs.readFile(fullPath, 'utf-8');
     return content;
   } catch (error) {
@@ -102,7 +133,7 @@ ipcMain.handle('fs:readFile', async (_, filePath: string) => {
 // Datei schreiben
 ipcMain.handle('fs:writeFile', async (_, filePath: string, content: string) => {
   try {
-    const fullPath = path.join(EXCALINOTE_DIR, filePath);
+    const fullPath = validateAndResolvePath(filePath);
     const dir = path.dirname(fullPath);
     
     // Stelle sicher, dass das Verzeichnis existiert
@@ -119,7 +150,7 @@ ipcMain.handle('fs:writeFile', async (_, filePath: string, content: string) => {
 // Verzeichnis erstellen
 ipcMain.handle('fs:createDir', async (_, dirPath: string) => {
   try {
-    const fullPath = path.join(EXCALINOTE_DIR, dirPath);
+    const fullPath = validateAndResolvePath(dirPath);
     await fs.mkdir(fullPath, { recursive: true });
     return { success: true };
   } catch (error) {
@@ -131,7 +162,7 @@ ipcMain.handle('fs:createDir', async (_, dirPath: string) => {
 // Datei oder Verzeichnis löschen
 ipcMain.handle('fs:delete', async (_, itemPath: string) => {
   try {
-    const fullPath = path.join(EXCALINOTE_DIR, itemPath);
+    const fullPath = validateAndResolvePath(itemPath);
     const stat = await fs.stat(fullPath);
     
     if (stat.isDirectory()) {
@@ -150,8 +181,8 @@ ipcMain.handle('fs:delete', async (_, itemPath: string) => {
 // Umbenennen/Verschieben
 ipcMain.handle('fs:rename', async (_, oldPath: string, newPath: string) => {
   try {
-    const fullOldPath = path.join(EXCALINOTE_DIR, oldPath);
-    const fullNewPath = path.join(EXCALINOTE_DIR, newPath);
+    const fullOldPath = validateAndResolvePath(oldPath);
+    const fullNewPath = validateAndResolvePath(newPath);
     
     // Stelle sicher, dass das Zielverzeichnis existiert
     const newDir = path.dirname(fullNewPath);

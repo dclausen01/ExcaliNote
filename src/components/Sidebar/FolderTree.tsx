@@ -3,6 +3,11 @@ import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown, Trash2, Edit }
 import { useNotebookStore } from '../../store/notebookStore';
 import type { NotebookItem } from '../../types';
 
+// Hilfsfunktion: Pfade sicher zusammenfügen
+function joinPath(...parts: string[]): string {
+  return parts.filter(Boolean).join('/');
+}
+
 interface FolderTreeProps {
   items: NotebookItem[];
   level: number;
@@ -121,7 +126,7 @@ function TreeItem({ item, level }: TreeItemProps) {
       if (draggedPath && draggedPath !== item.path) {
         try {
           const draggedFileName = draggedPath.split('/').pop() || '';
-          const newPath = item.path ? `${item.path}/${draggedFileName}` : draggedFileName;
+          const newPath = joinPath(item.path, draggedFileName);
           
           await renameItem(draggedPath, newPath);
         } catch (error) {

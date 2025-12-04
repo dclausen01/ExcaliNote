@@ -1,29 +1,10 @@
 import { create } from 'zustand';
 import type { NotebookStore, NotebookItem, FileSystemEntry } from '../types';
+import { logger } from '../utils/logger';
 
-// Hilfsfunktion: Ordnerstruktur aus Datei-Liste aufbauen
-function buildTree(entries: FileSystemEntry[], basePath: string = ''): NotebookItem[] {
-  const items: NotebookItem[] = [];
-  
-  for (const entry of entries) {
-    const item: NotebookItem = {
-      id: entry.path,
-      name: entry.name,
-      path: entry.path,
-      type: entry.isDirectory ? 'folder' : 'note',
-    };
-    
-    items.push(item);
-  }
-  
-  return items.sort((a, b) => {
-    // Ordner zuerst, dann Notizen
-    if (a.type !== b.type) {
-      return a.type === 'folder' ? -1 : 1;
-    }
-    // Alphabetisch sortieren
-    return a.name.localeCompare(b.name, 'de');
-  });
+// Hilfsfunktion: Pfade sicher zusammenfügen
+function joinPath(...parts: string[]): string {
+  return parts.filter(Boolean).join('/');
 }
 
 // Rekursiv Ordnerstruktur laden
@@ -54,10 +35,10 @@ async function loadFolderRecursive(path: string): Promise<NotebookItem[]> {
         return a.type === 'folder' ? -1 : 1;
       }
       // Alphabetisch sortieren
-      return a.name.localeCompare(b.name, 'de');
+      return a.name.localeCompare(a.name, 'de');
     });
   } catch (error) {
-    console.error('Fehler beim Laden des Ordners:', path, error);
+    logger.error('Fehler beim Laden des Ordners', { path, error });
     return [];
   }
 }
@@ -67,6 +48,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   notebooks: [],
   baseDir: '',
   theme: 'light',
+  isLoading: false,
   
   setCurrentNote: (path) => set({ currentNote: path }),
   
@@ -77,6 +59,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   setTheme: (theme) => set({ theme }),
   
   loadNotebooks: async () => {
+    set({ isLoading: true });
     try {
       // Basis-Verzeichnis abrufen
       const baseDir = await window.electron.fs.getBaseDir();
@@ -84,21 +67,22 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       
       // Ordnerstruktur laden
       const notebooks = await loadFolderRecursive('');
-      set({ notebooks });
+      set({ notebooks, isLoading: false });
     } catch (error) {
-      console.error('Fehler beim Laden der Notizbücher:', error);
+      logger.error('Fehler beim Laden der Notizbücher', { error });
+      set({ isLoading: false });
     }
   },
   
   createFolder: async (parentPath, name) => {
     try {
-      const newPath = parentPath ? `${parentPath}/${name}` : name;
+      const newPath = joinPath(parentPath, name);
       await window.electron.fs.createDir(newPath);
       
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
     } catch (error) {
-      console.error('Fehler beim Erstellen des Ordners:', error);
+      logger.error('Fehler beim Erstellen des Ordners', { parentPath, name, error });
       throw error;
     }
   },
@@ -107,7 +91,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
     try {
       // Stelle sicher, dass der Name die .excalidraw-Erweiterung hat
       const noteName = name.endsWith('.excalidraw') ? name : `${name}.excalidraw`;
-      const newPath = parentPath ? `${parentPath}/${noteName}` : noteName;
+      const newPath = joinPath(parentPath, noteName);
       
       // Erstelle eine leere Excalidraw-Datei
       const emptyData = {
@@ -130,7 +114,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       // Neue Notiz öffnen
       set({ currentNote: newPath });
     } catch (error) {
-      console.error('Fehler beim Erstellen der Notiz:', error);
+      logger.error('Fehler beim Erstellen der Notiz', { parentPath, name, error });
       throw error;
     }
   },
@@ -147,7 +131,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
     } catch (error) {
-      console.error('Fehler beim Löschen:', error);
+      logger.error('Fehler beim Löschen', { path, error });
       throw error;
     }
   },
@@ -164,7 +148,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
     } catch (error) {
-      console.error('Fehler beim Umbenennen:', error);
+      logger.error('Fehler beim Umbenennen', { oldPath, newPath, error });
       throw error;
     }
   },
@@ -173,7 +157,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
     try {
       await window.electron.fs.writeFile(path, JSON.stringify(data, null, 2));
     } catch (error) {
-      console.error('Fehler beim Speichern der Notiz:', error);
+      logger.error('Fehler beim Speichern der Notiz', { path, error });
       throw error;
     }
   },
