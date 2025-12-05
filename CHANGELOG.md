@@ -1,6 +1,6 @@
 # 🔄 ExcaliNote - Changelog
 
-## Version 0.1.9 - 12/5/2025
+## Version 0.2.0 - 12/5/2025
 
 ### 🐛 Critical Bug Fix - Image Loading
 
@@ -30,7 +30,7 @@
 
 - `src/components/Editor/Editor.tsx` - Komplette Refaktorierung der Bildlade-Logik
 - `IMAGE_LOADING_FIX.md` - Ausführliche Dokumentation der Änderungen
-- `package.json` - Version 0.1.9
+- `package.json` - Version 0.2.0
 
 #### 🎯 **Impact:**
 
