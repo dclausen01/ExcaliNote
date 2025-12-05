@@ -26,14 +26,17 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   // useRef für Debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousElementsRef = useRef<readonly ExcalidrawElement[]>([]);
-  const isLoadingRef = useRef(false);
+  const loadedNoteRef = useRef<string | null>(null);
 
   // Aktuelle Notiz laden
   useEffect(() => {
     const loadCurrentNote = async () => {
-      if (!currentNote || !window.electron || isLoadingRef.current) return;
+      if (!currentNote || !window.electron) return;
       
-      isLoadingRef.current = true;
+      // Verhindere doppeltes Laden derselben Notiz
+      if (loadedNoteRef.current === currentNote) return;
+      
+      loadedNoteRef.current = currentNote;
       
       try {
         logger.info('[Editor] Lade Notiz', { currentNote });
@@ -69,7 +72,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
           files: {}
         });
       } finally {
-        isLoadingRef.current = false;
+        // Nichts zu tun - loadedNoteRef bleibt auf currentNote gesetzt
       }
     };
 

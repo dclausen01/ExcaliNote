@@ -1,5 +1,35 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.3.3 - 12/5/2025
+
+### 🐛 Bugfix - Notizwechsel funktioniert jetzt zuverlässig
+
+#### ✅ **Richtige Notiz wird beim Klick geladen:**
+
+- **Problem behoben:** Beim schnellen Klicken zwischen Notizen wurde manchmal die falsche Notiz geladen
+- **Ursache:** `isLoadingRef` blockierte das Laden neuer Notizen während eines laufenden Ladevorgangs
+- **Lösung:** `loadedNoteRef` verhindert nur doppeltes Laden derselben Notiz, erlaubt aber Wechsel zu anderen Notizen
+
+#### 🔧 **Technische Änderungen:**
+
+- Ersetzt `isLoadingRef` durch `loadedNoteRef`
+- `loadedNoteRef` trackt die zuletzt geladene Notiz-ID
+- Erlaubt schnelles Wechseln zwischen Notizen
+- Verhindert nur redundante Ladevorgänge derselben Notiz
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx` - Verbesserte Lade-Logik
+- `package.json` - Version 0.3.3
+
+#### 🎯 **Impact:**
+
+- **Responsive:** Notizen wechseln sofort beim Klick
+- **Korrekt:** Immer die angeklickte Notiz wird geladen
+- **Performant:** Keine unnötigen Mehrfach-Ladevorgänge
+
+---
+
 ## Version 0.3.2 - 12/5/2025
 
 ### 🌐 Feature - Website-Embeds funktionieren jetzt
