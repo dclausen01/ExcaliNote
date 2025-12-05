@@ -16,60 +16,71 @@ interface EditorProps {
 export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: EditorProps) {
   const { currentNote, notebooks, saveNote, setTheme, isLoading, theme } = useNotebookStore();
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
-  const [sceneData, setSceneData] = useState<any>(null);
+  const [initialData, setInitialData] = useState<{
+    elements?: ExcalidrawElement[];
+    appState?: any;
+    files?: BinaryFiles;
+  } | null>(null);
   const [gridEnabled, setGridEnabled] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
-  const [isExcalidrawReady, setIsExcalidrawReady] = useState(false);
   
   // useRef für Debouncing
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousElementsRef = useRef<readonly ExcalidrawElement[]>([]);
-
-  // Excalidraw API bereit - safe update (inklusive Files/Bilder)
-  useEffect(() => {
-    if (excalidrawAPI && sceneData && isExcalidrawReady) {
-      try {
-        // Update Scene mit allen Daten inklusive Files
-        excalidrawAPI.updateScene({
-          elements: sceneData.elements,
-          appState: sceneData.appState,
-        });
-        
-        // Update Files separat, falls vorhanden
-        if (sceneData.files && Object.keys(sceneData.files).length > 0) {
-          excalidrawAPI.addFiles(Object.values(sceneData.files));
-        }
-      } catch (error) {
-        logger.error('Fehler beim Aktualisieren der Excalidraw-Scene', { error });
-      }
-    }
-  }, [excalidrawAPI, sceneData, isExcalidrawReady]);
+  const isLoadingRef = useRef(false);
 
   // Aktuelle Notiz laden
   useEffect(() => {
     const loadCurrentNote = async () => {
-      if (!currentNote || !window.electron) return;
-
+      if (!currentNote || !window.electron || isLoadingRef.current) return;
+      
+      isLoadingRef.current = true;
+      
       try {
+        logger.info('[Editor] Lade Notiz', { currentNote });
+        
+        // Lade JSON-Datei mit elements und appState
         const content = await window.electron.fs.readFile(currentNote);
         const data = JSON.parse(content);
         
-        // Lade Bilder separat
-        const images = await loadImages(currentNote);
+        logger.info('[Editor] Notiz-Daten geladen', { 
+          elementCount: data.elements?.length || 0,
+          currentNote 
+        });
         
-        // Kombiniere Scene-Daten mit Bildern
-        setSceneData({
-          ...data,
+        // Lade Bilder separat aus dem .excalidraw.files Ordner
+        const images = await loadImages(currentNote);
+        const imageCount = Object.keys(images).length;
+        
+        logger.info('[Editor] Bilder geladen', { 
+          imageCount, 
+          imageIds: Object.keys(images),
+          currentNote 
+        });
+        
+        // Kombiniere Scene-Daten mit Bildern für initialData
+        const combinedData = {
+          elements: data.elements || [],
+          appState: data.appState || {},
           files: images
+        };
+        
+        setInitialData(combinedData);
+        logger.info('[Editor] InitialData gesetzt', { 
+          elementCount: combinedData.elements.length,
+          imageCount,
+          currentNote 
         });
       } catch (error) {
-        logger.error('Fehler beim Laden der Notiz', { currentNote, error });
+        logger.error('[Editor] Fehler beim Laden der Notiz', { currentNote, error });
         // Neue leere Notiz
-        setSceneData({
+        setInitialData({
           elements: [],
           appState: {},
           files: {}
         });
+      } finally {
+        isLoadingRef.current = false;
       }
     };
 
@@ -193,10 +204,9 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     try {
       setExcalidrawAPI(api);
-      setIsExcalidrawReady(true);
+      logger.info('[Editor] Excalidraw API initialisiert');
     } catch (error) {
-      logger.error('Fehler beim Initialisieren der Excalidraw API', { error });
-      setIsExcalidrawReady(false);
+      logger.error('[Editor] Fehler beim Initialisieren der Excalidraw API', { error });
     }
   }, []);
 
@@ -204,8 +214,8 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
     return (
       <div className={`flex-1 flex items-center justify-center ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-[#2B2520] to-[#1F1B18]' 
-          : 'bg-gradient-to-br from-[#F5F2E3] to-[#E8DFD0]'
+          ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+          : 'bg-gradient-to-br from-gray-50 to-white'
       }`}>
         <div className="text-center max-w-md mx-auto px-6">
           <div className="mb-8">
@@ -217,17 +227,17 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
             />
           </div>
           <h1 className={`text-3xl font-bold mb-4 ${
-            theme === 'dark' ? 'text-[#E8DFD0]' : 'text-[#3D3530]'
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
             Willkommen bei ExcaliNote
           </h1>
           <p className={`text-lg mb-6 ${
-            theme === 'dark' ? 'text-[#C4B5A0]' : 'text-[#6B5D4F]'
+            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Deine OneNote-Alternative mit Excalidraw-Kern
           </p>
           <p className={`text-sm ${
-            theme === 'dark' ? 'text-[#A39988]' : 'text-[#8B7D6F]'
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
           }`}>
             Wähle eine Notiz aus dem linken Menü aus oder erstelle eine neue, um zu beginnen.
           </p>
@@ -239,52 +249,52 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
   return (
     <div className="flex-1 h-full flex flex-col">
       {/* Toolbar mit Grid Toggle, Save Status, Sidebar Toggle und Theme Toggle */}
-      <div className={`border-b px-4 py-2 flex items-center gap-4 ${
+      <div className={`border-b px-3 py-1.5 flex items-center gap-2 ${
         theme === 'dark' 
-          ? 'bg-[#1F1B18] border-[#3D3530]' 
-          : 'bg-[#FDFBF7] border-[#E8E4DB]'
+          ? 'bg-gray-800 border-gray-700' 
+          : 'bg-white border-gray-200'
       }`}>
         {/* Sidebar Toggle Button */}
         <button
           onClick={toggleSidebar}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition ${
             theme === 'dark'
-              ? 'bg-[#2B2520] text-[#E8DFD0] hover:bg-[#3D3530]'
-              : 'bg-[#F5F2E3] text-[#3D3530] hover:bg-[#E8DFD0]'
+              ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           title={sidebarCollapsed ? 'Sidebar anzeigen' : 'Sidebar ausblenden'}
         >
-          <Menu size={16} />
-          <span>{sidebarCollapsed ? 'Sidebar öffnen' : 'Sidebar schließen'}</span>
+          <Menu size={14} />
+          <span>{sidebarCollapsed ? 'Sidebar' : 'Sidebar'}</span>
         </button>
         
         <button
           onClick={toggleGrid}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition ${
             gridEnabled 
               ? 'bg-blue-500 text-white hover:bg-blue-600' 
               : theme === 'dark'
-                ? 'bg-[#2B2520] text-[#E8DFD0] hover:bg-[#3D3530]'
-                : 'bg-[#F5F2E3] text-[#3D3530] hover:bg-[#E8DFD0]'
+                ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           title="Grid anzeigen/ausblenden"
         >
-          <Grid size={16} />
-          <span>{gridEnabled ? 'Grid an' : 'Grid aus'}</span>
+          <Grid size={14} />
+          <span>{gridEnabled ? 'Grid' : 'Grid'}</span>
         </button>
         
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm transition ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition ${
             theme === 'dark'
-              ? 'bg-yellow-600 text-yellow-100 hover:bg-yellow-700'
-              : 'bg-gray-700 text-gray-100 hover:bg-gray-800'
+              ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
           title={`${theme === 'light' ? 'Dunkles' : 'Helles'} Theme aktivieren`}
         >
-          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+          {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+          <span>{theme === 'light' ? 'Dark' : 'Light'}</span>
         </button>
         
         {/* Save Status Indicator */}
@@ -315,22 +325,25 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
 
       {/* Excalidraw Editor */}
       <div className="flex-1">
-        <Excalidraw
-          excalidrawAPI={handleExcalidrawAPI}
-          onChange={handleChange}
-          initialData={sceneData}
-          UIOptions={{
-            canvasActions: {
-              loadScene: false,
-              export: { saveFileToDisk: false },
-              changeViewBackgroundColor: true,
-            },
-          }}
-          langCode="de"
-          viewModeEnabled={false}
-          zenModeEnabled={false}
-          gridModeEnabled={gridEnabled}
-        />
+        {initialData && currentNote && (
+          <Excalidraw
+            key={currentNote}
+            excalidrawAPI={handleExcalidrawAPI}
+            onChange={handleChange}
+            initialData={initialData}
+            UIOptions={{
+              canvasActions: {
+                loadScene: false,
+                export: { saveFileToDisk: false },
+                changeViewBackgroundColor: true,
+              },
+            }}
+            langCode="de"
+            viewModeEnabled={false}
+            zenModeEnabled={false}
+            gridModeEnabled={gridEnabled}
+          />
+        )}
       </div>
     </div>
   );

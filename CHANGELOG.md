@@ -1,5 +1,46 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.1.9 - 12/5/2025
+
+### 🐛 Critical Bug Fix - Image Loading
+
+#### ✅ **Bilder werden jetzt korrekt geladen:**
+
+- **Problem behoben:** Bilder wurden in separaten `.excalidraw.files` Ordnern gespeichert, aber beim erneuten Laden der Notiz nicht korrekt angezeigt
+  - Bildelemente waren ohne Dimensionen vorhanden
+  - Bildinhalt wurde nicht dargestellt
+  - Race Condition zwischen Excalidraw-Initialisierung und File-Loading
+
+#### 🔧 **Technische Lösung:**
+
+- **initialData API:** Migration von `excalidrawAPI.addFiles()` zu `initialData` Prop
+
+  - Verwendet jetzt die offiziell empfohlene Methode von Excalidraw
+  - Files werden synchron mit Elements geladen
+  - Keine Race Conditions mehr
+  - `key={currentNote}` Prop für korrektes Component Remounting
+
+- **Code-Verbesserungen:**
+  - State-Umstrukturierung: `sceneData` → `initialData`
+  - Entfernung des problematischen `useEffect` für `updateScene()`
+  - `isLoadingRef` zur Vermeidung von Mehrfachladungen
+  - Verbessertes Logging für besseres Debugging
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx` - Komplette Refaktorierung der Bildlade-Logik
+- `IMAGE_LOADING_FIX.md` - Ausführliche Dokumentation der Änderungen
+- `package.json` - Version 0.1.9
+
+#### 🎯 **Impact:**
+
+- **Zuverlässiges Bildladen:** Bilder werden jetzt immer korrekt geladen und angezeigt
+- **Bessere Performance:** Keine unnötigen Re-Renders oder doppelten API-Aufrufe
+- **Dokumentiert:** Verwendet die offiziell empfohlene Methode von Excalidraw
+- **Wartbar:** Einfacherer Code ohne komplexe State-Synchronisation
+
+---
+
 ## Version 0.1.6 - 12/4/2025
 
 ### 🔧 CI/CD Fixes & Improvements

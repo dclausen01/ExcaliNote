@@ -14,6 +14,11 @@ async function loadFolderRecursive(path: string): Promise<NotebookItem[]> {
     const items: NotebookItem[] = [];
     
     for (const entry of entries) {
+      // Überspringe .excalidraw.files Ordner (Bildanhänge)
+      if (entry.isDirectory && entry.name.endsWith('.excalidraw.files')) {
+        continue;
+      }
+      
       const item: NotebookItem = {
         id: entry.path,
         name: entry.name,
