@@ -1,5 +1,37 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.3.2 - 12/5/2025
+
+### 🌐 Feature - Website-Embeds funktionieren jetzt
+
+#### ✅ **Embedded Websites werden jetzt geladen:**
+
+- **Problem behoben:** Electron blockierte standardmäßig das Laden von iframes/embedded content
+- **Lösung:**
+  - `webviewTag: true` aktiviert in Electron-Konfiguration
+  - Content Security Policy (CSP) angepasst für externe Inhalte
+  - Erlaubt sichere Einbettung von Websites in Excalidraw
+
+#### 🔧 **Technische Änderungen:**
+
+- `electron/main.ts`:
+  - `webviewTag: true` in webPreferences
+  - CSP-Header angepasst: `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:`
+  - onHeadersReceived Handler für sichere externe Inhalte
+
+#### 📁 **Geänderte Dateien:**
+
+- `electron/main.ts` - CSP und webview Konfiguration
+- `package.json` - Version 0.3.2
+
+#### 🎯 **Impact:**
+
+- **Website-Embeds funktionieren:** YouTube, Google Maps, etc. können eingebettet werden
+- **Sicher:** Nur in webview/iframe Kontext, keine Node-Integration
+- **Flexibel:** Alle Standard-Excalidraw-Features verfügbar
+
+---
+
 ## Version 0.3.1 - 12/5/2025
 
 ### 🐛 Critical Bugfix - Speicherung funktioniert jetzt zuverlässig

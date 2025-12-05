@@ -65,8 +65,20 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webviewTag: true, // Enable iframe/webview for Excalidraw embeds
+      allowRunningInsecureContent: false,
     },
     icon: iconPath
+  });
+
+  // Allow loading external content for embedded websites
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:"]
+      }
+    });
   });
 
   // In development mode, load from vite dev server
