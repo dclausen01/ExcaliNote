@@ -5,7 +5,6 @@ import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/exca
 import { useNotebookStore } from '../../store/notebookStore';
 import { FileText, Grid, Menu, Sun, Moon } from 'lucide-react';
 import { logger } from '../../utils/logger';
-import { saveImages, loadImages, cleanupUnusedImages } from '../../utils/imageStorage';
 import bannerImage from '../../assets/excalinotes_banner.png';
 
 interface EditorProps {
@@ -39,36 +38,26 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
       try {
         logger.info('[Editor] Lade Notiz', { currentNote });
         
-        // Lade JSON-Datei mit elements und appState
+        // Lade JSON-Datei mit elements, appState UND files (Bilder inline)
         const content = await window.electron.fs.readFile(currentNote);
         const data = JSON.parse(content);
         
         logger.info('[Editor] Notiz-Daten geladen', { 
           elementCount: data.elements?.length || 0,
+          fileCount: Object.keys(data.files || {}).length,
           currentNote 
         });
         
-        // Lade Bilder separat aus dem .excalidraw.files Ordner
-        const images = await loadImages(currentNote);
-        const imageCount = Object.keys(images).length;
-        
-        logger.info('[Editor] Bilder geladen', { 
-          imageCount, 
-          imageIds: Object.keys(images),
-          currentNote 
-        });
-        
-        // Kombiniere Scene-Daten mit Bildern für initialData
-        const combinedData = {
+        // Excalidraw-Standard: files sind bereits in der JSON-Datei enthalten
+        setInitialData({
           elements: data.elements || [],
           appState: data.appState || {},
-          files: images
-        };
+          files: data.files || {}
+        });
         
-        setInitialData(combinedData);
         logger.info('[Editor] InitialData gesetzt', { 
-          elementCount: combinedData.elements.length,
-          imageCount,
+          elementCount: data.elements?.length || 0,
+          fileCount: Object.keys(data.files || {}).length,
           currentNote 
         });
       } catch (error) {
@@ -148,25 +137,26 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         saveTimeoutRef.current = setTimeout(async () => {
           setSaveStatus('saving');
           try {
-            // Speichere Bilder separat
-            await saveImages(currentNote, files);
-            
-            // Cleanup: Lösche ungenutzte Bilder
-            await cleanupUnusedImages(currentNote, files);
-            
-            // Speichere Notiz ohne Bilder (nur Referenzen)
-            const dataWithoutImages = {
+            // Excalidraw-Standard: Speichere alles inline in der JSON-Datei
+            // Bilder werden als Base64-DataURLs direkt in files gespeichert
+            const dataToSaveComplete = {
               elements,
               appState: dataToSave.appState,
-              files: {}, // Keine Bilder im JSON
+              files, // Bilder inline speichern (Excalidraw-Standard!)
             };
             
-            await saveNote(currentNote, dataWithoutImages);
+            await saveNote(currentNote, dataToSaveComplete);
             setSaveStatus('saved');
+            logger.info('[Editor] Notiz gespeichert', { 
+              currentNote,
+              elementCount: elements.length,
+              fileCount: Object.keys(files).length
+            });
+            
             // Update previous elements reference nach erfolgreichem Speichern
             previousElementsRef.current = elements;
           } catch (error) {
-            logger.error('Fehler beim Speichern', { currentNote, error });
+            logger.error('[Editor] Fehler beim Speichern', { currentNote, error });
             setSaveStatus('unsaved');
           }
         }, 500);
@@ -331,6 +321,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
             excalidrawAPI={handleExcalidrawAPI}
             onChange={handleChange}
             initialData={initialData}
+            validateEmbeddable={true}
             UIOptions={{
               canvasActions: {
                 loadScene: false,

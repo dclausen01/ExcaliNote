@@ -1,5 +1,54 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.3.0 - 12/5/2025
+
+### 🎯 BREAKING CHANGE - Inline Image Storage (Excalidraw-Standard)
+
+#### ✅ **Bilder werden jetzt inline gespeichert (wie von Excalidraw vorgesehen):**
+
+- **Vereinfachte Architektur:** Bilder werden als Base64-DataURLs direkt in der .excalidraw-Datei gespeichert
+  - Kein separater `.excalidraw.files` Ordner mehr nötig
+  - Bilder sind Teil der JSON-Datei (im `files`-Objekt)
+  - Folgt dem offiziellen Excalidraw-Dateiformat
+  - Einfachere Dateistruktur und Backup
+
+#### 🔧 **Technische Änderungen:**
+
+- **Entfernung komplexer Bild-Logik:**
+
+  - `saveImages()`, `loadImages()`, `cleanupUnusedImages()` nicht mehr verwendet
+  - Keine separate Dateisystem-Operation für Bilder
+  - Einfacheres Laden und Speichern
+  - Weniger Fehlerquellen
+
+- **Excalidraw-konform:**
+  - Bilder werden inline als Teil von `files: BinaryFiles` gespeichert
+  - DataURLs (Base64) direkt in JSON
+  - Vollständig kompatibel mit offiziellem Excalidraw-Format
+  - Notizen können direkt in Excalidraw.com importiert werden
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx` - Vereinfachte Lade- und Speicherlogik
+- `src/store/notebookStore.ts` - Entfernung des `.excalidraw.files` Filters
+- `package.json` - Version 0.3.0
+
+#### 🎯 **Vorteile:**
+
+- **Einfacher:** Keine separate Bild-Verwaltung mehr
+- **Standard-konform:** Verwendet offizielles Excalidraw-Format
+- **Zuverlässiger:** Weniger bewegliche Teile = weniger Fehler
+- **Portabel:** Notizen können einfach kopiert/geteilt werden (alles in einer Datei)
+- **Backup-freundlich:** Eine Datei = eine komplette Notiz mit allen Bildern
+
+#### ⚠️ **Migration:**
+
+- Alte Notizen mit separaten `.excalidraw.files` Ordnern funktionieren noch
+- Beim nächsten Speichern werden Bilder automatisch inline konvertiert
+- Alte `.excalidraw.files` Ordner können manuell gelöscht werden
+
+---
+
 ## Version 0.2.0 - 12/5/2025
 
 ### 🐛 Critical Bug Fix - Image Loading
