@@ -85,7 +85,7 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
     };
   }, []);
 
-  // Auto-Save: Änderungen automatisch speichern (nur bei Canvas-Änderungen)
+  // Auto-Save: Änderungen automatisch speichern
   const handleChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!currentNote) return;
@@ -95,20 +95,8 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
         setTheme(appState.theme as 'light' | 'dark');
       }
 
-      // Prüfe ob sich die Elements tatsächlich geändert haben (nur bei Canvas-Änderungen speichern)
-      const hasElementsChanged = elements.length !== previousElementsRef.current.length ||
-        elements.some((element, index) => {
-          const prevElement = previousElementsRef.current[index];
-          return !prevElement || 
-                 prevElement.x !== element.x ||
-                 prevElement.y !== element.y ||
-                 prevElement.width !== element.width ||
-                 prevElement.height !== element.height ||
-                 prevElement.type !== element.type;
-        });
-
-      // Nur bei tatsächlichen Element-Änderungen speichern, nicht bei Theme-Änderungen
-      if (hasElementsChanged) {
+      // Speichere immer (Excalidraw ruft onChange nur bei tatsächlichen Änderungen auf)
+      {
         const dataToSave = {
           elements,
           appState: {
@@ -321,7 +309,6 @@ export default function Editor({ sidebarCollapsed, setSidebarCollapsed }: Editor
             excalidrawAPI={handleExcalidrawAPI}
             onChange={handleChange}
             initialData={initialData}
-            validateEmbeddable={true}
             UIOptions={{
               canvasActions: {
                 loadScene: false,

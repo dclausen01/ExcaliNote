@@ -1,5 +1,34 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.3.1 - 12/5/2025
+
+### 🐛 Critical Bugfix - Speicherung funktioniert jetzt zuverlässig
+
+#### ✅ **Alle Änderungen werden jetzt gespeichert:**
+
+- **Problem behoben:** Zu restriktive Change-Detection erkannte viele Änderungen nicht
+  - Textänderungen wurden nicht gespeichert
+  - Farb- und Style-Änderungen gingen verloren
+  - Rotationen und andere Transformationen wurden ignoriert
+- **Lösung:** Vereinfachte Change-Detection
+  - Excalidraw ruft `onChange` nur bei tatsächlichen Änderungen auf
+  - Keine manuelle Prüfung mehr nötig
+  - Alle Änderungen werden zuverlässig erkannt
+- **Zusätzlich entfernt:** `validateEmbeddable` Prop (verhinderte Website-Embeds)
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx` - Vereinfachte handleChange Logik
+- `package.json` - Version 0.3.1
+
+#### 🎯 **Impact:**
+
+- **Zuverlässig:** Alle Änderungen werden jetzt gespeichert
+- **Einfacher:** Weniger komplexe Logik
+- **Schneller:** Keine unnötigen Vergleiche mehr
+
+---
+
 ## Version 0.3.0 - 12/5/2025
 
 ### 🎯 BREAKING CHANGE - Inline Image Storage (Excalidraw-Standard)
