@@ -226,11 +226,8 @@ export default function Editor() {
           langCode="de"
           theme={theme}
         >
-          {/* Navigation Sidebar (LINKS) */}
-          <Sidebar name="navigation" docked={sidebarDocked}>
-            <Sidebar.Trigger name="navigation">
-              <FolderTree size={20} />
-            </Sidebar.Trigger>
+          {/* Navigation Sidebar (LINKS) - standardmäßig geöffnet */}
+          <Sidebar name="navigation" docked={true}>
             <Sidebar.Header>
               <div style={{ 
                 display: 'flex', 
