@@ -227,12 +227,10 @@ export default function Editor() {
           theme={theme}
         >
           {/* Navigation Sidebar (LINKS) */}
-          <Sidebar 
-            name="navigation" 
-            docked={sidebarDocked} 
-            onDock={setSidebarDocked}
-            className="excalinote-navigation-sidebar"
-          >
+          <Sidebar name="navigation" docked={sidebarDocked}>
+            <Sidebar.Trigger name="navigation">
+              <FolderTree size={20} />
+            </Sidebar.Trigger>
             <Sidebar.Header>
               <div style={{ 
                 display: 'flex', 
