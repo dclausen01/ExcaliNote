@@ -45,6 +45,14 @@ export interface NotebookStore {
   // Loading States
   isLoading: boolean;
   
+  // Sidebar-State für Excalidraw Integration
+  sidebarDocked: boolean;
+  setSidebarDocked: (docked: boolean) => void;
+  
+  // Erweiterte Ordner für Tree-Navigation
+  expandedFolders: Set<string>;
+  toggleFolder: (folderId: string) => void;
+  
   // Laden der Ordnerstruktur
   loadNotebooks: () => Promise<void>;
   
