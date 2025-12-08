@@ -6,9 +6,22 @@ let autoUpdater: any = null;
 function getAutoUpdater() {
   if (!autoUpdater && process.env.NODE_ENV !== 'development') {
     autoUpdater = require('electron-updater').autoUpdater;
+    
     // Konfiguriere den AutoUpdater
     autoUpdater.autoDownload = false; // Wir wollen manuell downloaden
     autoUpdater.autoInstallOnAppQuit = true; // Automatisch beim Beenden installieren
+    
+    // Explizit GitHub-Provider setzen
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'dclausen01',
+      repo: 'ExcaliNote',
+    });
+    
+    console.log('[AutoUpdater] GitHub Feed konfiguriert:', {
+      owner: 'dclausen01',
+      repo: 'ExcaliNote',
+    });
   }
   return autoUpdater;
 }
