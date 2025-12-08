@@ -8,7 +8,7 @@ function getAutoUpdater() {
     autoUpdater = require('electron-updater').autoUpdater;
     
     // Konfiguriere den AutoUpdater
-    autoUpdater.autoDownload = false; // Wir wollen manuell downloaden
+    autoUpdater.autoDownload = true; // Wir wollen manuell downloaden
     autoUpdater.autoInstallOnAppQuit = true; // Automatisch beim Beenden installieren
     
     // Explizit GitHub-Provider setzen

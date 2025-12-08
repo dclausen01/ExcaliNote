@@ -49,6 +49,8 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   baseDir: '',
   theme: 'light',
   isLoading: false,
+  sidebarDocked: true,
+  expandedFolders: new Set<string>(),
   
   setCurrentNote: (path) => set({ currentNote: path }),
   
@@ -57,6 +59,18 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   setBaseDir: (dir) => set({ baseDir: dir }),
   
   setTheme: (theme) => set({ theme }),
+  
+  setSidebarDocked: (docked) => set({ sidebarDocked: docked }),
+  
+  toggleFolder: (folderId) => set((state) => {
+    const newExpanded = new Set(state.expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    return { expandedFolders: newExpanded };
+  }),
   
   loadNotebooks: async () => {
     set({ isLoading: true });
