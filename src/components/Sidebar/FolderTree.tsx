@@ -1,12 +1,7 @@
 import { useState } from 'react';
 import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown, Trash2, Edit } from 'lucide-react';
-import { useNotebookStore } from '../../store/notebookStore';
+import { useNotebookStore, joinPath } from '../../store/notebookStore';
 import type { NotebookItem } from '../../types';
-
-// Hilfsfunktion: Pfade sicher zusammenfügen
-function joinPath(...parts: string[]): string {
-  return parts.filter(Boolean).join('/');
-}
 
 interface FolderTreeProps {
   items: NotebookItem[];
@@ -29,13 +24,22 @@ interface TreeItemProps {
 }
 
 function TreeItem({ item, level }: TreeItemProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(item.name);
   const [isDragOver, setIsDragOver] = useState(false);
   
-  const { currentNote, setCurrentNote, deleteItem, renameItem, theme } = useNotebookStore();
+  const { 
+    currentNote, 
+    setCurrentNote, 
+    deleteItem, 
+    renameItem, 
+    theme,
+    expandedFolders,
+    toggleFolder
+  } = useNotebookStore();
+  
   const isSelected = currentNote === item.path;
+  const isOpen = expandedFolders.has(item.path);
   
   // Dark/Light Mode Farben
   const isDark = theme === 'dark';
@@ -53,7 +57,7 @@ function TreeItem({ item, level }: TreeItemProps) {
     if (item.type === 'note') {
       setCurrentNote(item.path);
     } else {
-      setIsOpen(!isOpen);
+      toggleFolder(item.path);
     }
   };
 
@@ -81,11 +85,16 @@ function TreeItem({ item, level }: TreeItemProps) {
     }
 
     try {
-      const pathParts = item.path.split('/');
-      pathParts[pathParts.length - 1] = item.type === 'note' 
+      // Improved path handling
+      const parentPath = item.path.lastIndexOf('/') !== -1 
+        ? item.path.substring(0, item.path.lastIndexOf('/'))
+        : '';
+        
+      const nameToUse = item.type === 'note' 
         ? (editName.endsWith('.excalidraw') ? editName : `${editName}.excalidraw`)
         : editName;
-      const newPath = pathParts.join('/');
+      
+      const newPath = joinPath(parentPath, nameToUse);
       
       await renameItem(item.path, newPath);
       setIsEditing(false);
@@ -98,10 +107,9 @@ function TreeItem({ item, level }: TreeItemProps) {
 
   // Drag & Drop Handler
   const handleDragStart = (e: React.DragEvent) => {
-    if (item.type === 'note') {
-      e.dataTransfer.setData('text/plain', item.path);
-      e.dataTransfer.effectAllowed = 'move';
-    }
+    // Allow dragging both files and folders
+    e.dataTransfer.setData('text/plain', item.path);
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -124,8 +132,17 @@ function TreeItem({ item, level }: TreeItemProps) {
       const draggedPath = e.dataTransfer.getData('text/plain');
       
       if (draggedPath && draggedPath !== item.path) {
+        // Prevent moving folder into itself
+        if (item.path.startsWith(draggedPath + '/') || item.path === draggedPath) {
+          return;
+        }
+
         try {
-          const draggedFileName = draggedPath.split('/').pop() || '';
+          // Improved path handling
+          const draggedFileName = draggedPath.lastIndexOf('/') !== -1
+            ? draggedPath.substring(draggedPath.lastIndexOf('/') + 1)
+            : draggedPath;
+            
           const newPath = joinPath(item.path, draggedFileName);
           
           await renameItem(draggedPath, newPath);
@@ -148,7 +165,7 @@ function TreeItem({ item, level }: TreeItemProps) {
         `}
         style={{ paddingLeft: `${paddingLeft}px` }}
         onClick={handleClick}
-        draggable={item.type === 'note'}
+        draggable={true} // Allow dragging everything
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}

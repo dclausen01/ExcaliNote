@@ -1,28 +1,33 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Excalidraw, Sidebar, Footer, MainMenu } from '@excalidraw/excalidraw';
+import { Excalidraw, Footer, MainMenu } from '@excalidraw/excalidraw';
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { useNotebookStore } from '../../store/notebookStore';
-import { FolderTree, Search } from 'lucide-react';
 import { logger } from '../../utils/logger';
-import { NotebookTreeIntegrated } from './NotebookTreeIntegrated';
-import { SearchPanel } from './SearchPanel';
 import './ExcalidrawOverrides.css';
-import bannerImage from '../../assets/excalinotes_banner.png';
 
 export default function Editor() {
   const { 
     currentNote, 
     saveNote, 
     setTheme, 
-    isLoading, 
     theme,
-    sidebarDocked,
-    setSidebarDocked,
-    loadNotebooks
+    loadNotebooks,
+    showGrid
   } = useNotebookStore();
   
   const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
+
+  // Sync grid state with Excalidraw
+  useEffect(() => {
+    if (excalidrawAPI) {
+      excalidrawAPI.updateScene({
+        appState: {
+          gridSize: showGrid ? 20 : null
+        }
+      });
+    }
+  }, [excalidrawAPI, showGrid]);
   const [initialData, setInitialData] = useState<{
     elements?: ExcalidrawElement[];
     appState?: any;
@@ -209,7 +214,6 @@ export default function Editor() {
 
   return (
     <div className="flex-1 h-full">
-      {/* Render Excalidraw immer, auch ohne Notiz, damit die Sidebar sichtbar ist */}
       <Excalidraw
           key={currentNote}
           excalidrawAPI={handleExcalidrawAPI}
@@ -221,46 +225,10 @@ export default function Editor() {
               export: { saveFileToDisk: false },
               changeViewBackgroundColor: true,
             },
-            dockedSidebarBreakpoint: 0,
           }}
           langCode="de"
           theme={theme}
         >
-          {/* Navigation Sidebar (LINKS) - standardmäßig geöffnet */}
-          <Sidebar name="navigation" docked={true}>
-            <Sidebar.Header>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px',
-                fontWeight: 600,
-                fontSize: '16px'
-              }}>
-                <span>📝</span>
-                <span>ExcaliNote</span>
-              </div>
-            </Sidebar.Header>
-            
-            <Sidebar.Tabs>
-              <Sidebar.Tab tab="notebooks">
-                <NotebookTreeIntegrated />
-              </Sidebar.Tab>
-              
-              <Sidebar.Tab tab="search">
-                <SearchPanel />
-              </Sidebar.Tab>
-              
-              <Sidebar.TabTriggers>
-                <Sidebar.TabTrigger tab="notebooks">
-                  <FolderTree size={18} />
-                </Sidebar.TabTrigger>
-                <Sidebar.TabTrigger tab="search">
-                  <Search size={18} />
-                </Sidebar.TabTrigger>
-              </Sidebar.TabTriggers>
-            </Sidebar.Tabs>
-          </Sidebar>
-
           {/* Footer mit Notiz-Info */}
           <Footer>
             <div style={{

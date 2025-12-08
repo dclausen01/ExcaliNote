@@ -3,7 +3,7 @@ import type { NotebookStore, NotebookItem, FileSystemEntry } from '../types';
 import { logger } from '../utils/logger';
 
 // Hilfsfunktion: Pfade sicher zusammenfügen
-function joinPath(...parts: string[]): string {
+export function joinPath(...parts: string[]): string {
   return parts.filter(Boolean).join('/');
 }
 
@@ -50,6 +50,7 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   theme: 'light',
   isLoading: false,
   sidebarDocked: true,
+  showGrid: false,
   expandedFolders: new Set<string>(),
   
   setCurrentNote: (path) => set({ currentNote: path }),
@@ -61,6 +62,8 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   setTheme: (theme) => set({ theme }),
   
   setSidebarDocked: (docked) => set({ sidebarDocked: docked }),
+
+  setShowGrid: (show) => set({ showGrid: show }),
   
   toggleFolder: (folderId) => set((state) => {
     const newExpanded = new Set(state.expandedFolders);
@@ -137,8 +140,9 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
     try {
       await window.electron.fs.delete(path);
       
-      // Wenn die gelöschte Datei die aktuell geöffnete war, schließe sie
-      if (get().currentNote === path) {
+      // Wenn die gelöschte Datei die aktuell geöffnete war (oder darin enthalten war), schließe sie
+      const currentNote = get().currentNote;
+      if (currentNote && (currentNote === path || currentNote.startsWith(path + '/'))) {
         set({ currentNote: null });
       }
       

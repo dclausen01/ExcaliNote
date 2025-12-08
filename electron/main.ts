@@ -156,11 +156,23 @@ ipcMain.handle('fs:writeFile', async (_, filePath: string, content: string) => {
     
     // Stelle sicher, dass das Verzeichnis existiert
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(fullPath, content, 'utf-8');
+    
+    // Atomic write: erst in temporäre Datei schreiben, dann umbenennen
+    const tempPath = `${fullPath}.tmp`;
+    await fs.writeFile(tempPath, content, 'utf-8');
+    await fs.rename(tempPath, fullPath);
     
     return { success: true };
   } catch (error) {
     console.error('Fehler beim Schreiben der Datei:', error);
+    // Versuche temporäre Datei zu löschen, falls sie existiert
+    try {
+      const fullPath = validateAndResolvePath(filePath);
+      const tempPath = `${fullPath}.tmp`;
+      await fs.unlink(tempPath);
+    } catch (cleanupError) {
+      // Ignorieren, wenn Datei nicht existiert
+    }
     throw error;
   }
 });
@@ -219,125 +231,6 @@ ipcMain.handle('fs:getBaseDir', () => {
   return EXCALINOTE_DIR;
 });
 
-// IPC Handlers für Bild-Operationen
-
-// Hilfsfunktion: Bildordner-Pfad für eine Notiz generieren
-function getImageFolderPath(notePath: string): string {
-  return notePath.replace(/\.excalidraw$/, '.excalidraw.files');
-}
-
-// Bild-Datei schreiben
-ipcMain.handle('fs:writeImageFile', async (_, notePath: string, imageId: string, base64Data: string, mimeType: string) => {
-  try {
-    const imageFolderPath = getImageFolderPath(notePath);
-    const fullImageFolderPath = validateAndResolvePath(imageFolderPath);
-    
-    // Erstelle Bildordner falls nicht vorhanden
-    await fs.mkdir(fullImageFolderPath, { recursive: true });
-    
-    // Extrahiere Dateiendung aus MIME-Type
-    const extension = mimeType.split('/')[1] || 'png';
-    const imageFileName = `${imageId}.${extension}`;
-    const imageFilePath = path.join(imageFolderPath, imageFileName);
-    const fullImageFilePath = validateAndResolvePath(imageFilePath);
-    
-    // Konvertiere Base64 zu Buffer und speichere
-    const base64WithoutPrefix = base64Data.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64WithoutPrefix, 'base64');
-    await fs.writeFile(fullImageFilePath, buffer);
-    
-    console.log(`[ImageStorage] Bild gespeichert: ${imageFilePath}`);
-    return { success: true, path: imageFilePath };
-  } catch (error) {
-    console.error('[ImageStorage] Fehler beim Speichern des Bildes:', error);
-    throw error;
-  }
-});
-
-// Bild-Datei lesen
-ipcMain.handle('fs:readImageFile', async (_, notePath: string, imageId: string) => {
-  try {
-    const imageFolderPath = getImageFolderPath(notePath);
-    const fullImageFolderPath = validateAndResolvePath(imageFolderPath);
-    
-    // Suche nach der Bilddatei mit verschiedenen Endungen
-    const possibleExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
-    
-    for (const ext of possibleExtensions) {
-      const imageFileName = `${imageId}.${ext}`;
-      const imageFilePath = path.join(imageFolderPath, imageFileName);
-      
-      try {
-        const fullImageFilePath = validateAndResolvePath(imageFilePath);
-        const buffer = await fs.readFile(fullImageFilePath);
-        const base64 = buffer.toString('base64');
-        const mimeType = `image/${ext}`;
-        const dataUrl = `data:${mimeType};base64,${base64}`;
-        
-        return { success: true, dataUrl, mimeType };
-      } catch (err) {
-        // Datei nicht gefunden, versuche nächste Endung
-        continue;
-      }
-    }
-    
-    throw new Error(`Bild nicht gefunden: ${imageId}`);
-  } catch (error) {
-    console.error('[ImageStorage] Fehler beim Lesen des Bildes:', error);
-    throw error;
-  }
-});
-
-// Alle Bilder einer Notiz auflisten
-ipcMain.handle('fs:listImageFiles', async (_, notePath: string) => {
-  try {
-    const imageFolderPath = getImageFolderPath(notePath);
-    const fullImageFolderPath = validateAndResolvePath(imageFolderPath);
-    
-    try {
-      const entries = await fs.readdir(fullImageFolderPath);
-      return entries.map(entry => {
-        const imageId = entry.replace(/\.\w+$/, '');
-        return imageId;
-      });
-    } catch (err) {
-      // Ordner existiert nicht - keine Bilder vorhanden
-      return [];
-    }
-  } catch (error) {
-    console.error('[ImageStorage] Fehler beim Auflisten der Bilder:', error);
-    throw error;
-  }
-});
-
-// Bild-Datei löschen
-ipcMain.handle('fs:deleteImageFile', async (_, notePath: string, imageId: string) => {
-  try {
-    const imageFolderPath = getImageFolderPath(notePath);
-    const fullImageFolderPath = validateAndResolvePath(imageFolderPath);
-    
-    // Suche und lösche alle Bilder mit dieser ID (verschiedene Endungen)
-    const possibleExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
-    
-    for (const ext of possibleExtensions) {
-      const imageFileName = `${imageId}.${ext}`;
-      const imageFilePath = path.join(imageFolderPath, imageFileName);
-      
-      try {
-        const fullImageFilePath = validateAndResolvePath(imageFilePath);
-        await fs.unlink(fullImageFilePath);
-        console.log(`[ImageStorage] Bild gelöscht: ${imageFilePath}`);
-      } catch (err) {
-        // Datei nicht gefunden - ignorieren
-      }
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('[ImageStorage] Fehler beim Löschen des Bildes:', error);
-    throw error;
-  }
-});
 
 // IPC Handlers für Updates
 

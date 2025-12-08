@@ -48,6 +48,10 @@ export interface NotebookStore {
   // Sidebar-State für Excalidraw Integration
   sidebarDocked: boolean;
   setSidebarDocked: (docked: boolean) => void;
+
+  // Grid State
+  showGrid: boolean;
+  setShowGrid: (show: boolean) => void;
   
   // Erweiterte Ordner für Tree-Navigation
   expandedFolders: Set<string>;
