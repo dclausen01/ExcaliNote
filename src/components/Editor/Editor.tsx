@@ -55,6 +55,10 @@ export default function Editor() {
     const loadCurrentNote = async () => {
       if (!currentNote || !window.electron) return;
       
+      // Reset status on note switch
+      setSaveStatus('saved');
+      setLastSaved(null);
+      
       // Verhindere doppeltes Laden derselben Notiz
       if (loadedNoteRef.current === currentNote) return;
       
@@ -246,6 +250,7 @@ export default function Editor() {
           excalidrawAPI={handleExcalidrawAPI}
           onChange={handleChange}
           initialData={initialData}
+          validateEmbeddable={true}
           UIOptions={{
             canvasActions: {
               loadScene: false,
@@ -264,7 +269,7 @@ export default function Editor() {
               gap: '16px',
               padding: '0 12px',
               fontSize: '13px',
-              color: 'var(--color-on-surface-variant)'
+              color: isDark ? '#e5e5e5' : '#171717'
             }}>
               <span>{getCurrentNoteName()}</span>
               {lastSaved && (
@@ -273,12 +278,12 @@ export default function Editor() {
                 </span>
               )}
               {saveStatus === 'saving' && (
-                <span style={{ color: 'var(--color-primary)' }}>
+                <span style={{ color: isDark ? '#60a5fa' : '#2563eb' }}>
                   Speichert...
                 </span>
               )}
               {saveStatus === 'unsaved' && (
-                <span style={{ color: 'var(--color-warning)' }}>
+                <span style={{ color: isDark ? '#facc15' : '#dc2626' }}>
                   ● Nicht gespeichert
                 </span>
               )}

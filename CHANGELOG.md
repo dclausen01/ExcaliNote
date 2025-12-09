@@ -1,5 +1,22 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.10 - 12/9/2025
+
+### 🛠️ Bugfixes & Improvements
+
+#### ✅ **Excalidraw Integration:**
+
+- **Web Embeds aktiviert:** Externe Inhalte (z.B. YouTube, Google Maps) können jetzt in Excalidraw eingebettet werden.
+- **Save Status Fix:** Der "Nicht gespeichert" Status wird beim Wechseln von Notizen jetzt korrekt zurückgesetzt, um Verwirrung zu vermeiden.
+- **UI Tweaks:** Die Textfarbe des "Nicht gespeichert" Indikators wurde für den Light Mode optimiert (Rot statt Gelb), um besser lesbar zu sein.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx`
+- `package.json` - Version 0.4.10
+
+---
+
 ## Version 0.4.9 - 12/9/2025
 
 ### 🚀 UX Enhancement - Immediate Edit Mode
