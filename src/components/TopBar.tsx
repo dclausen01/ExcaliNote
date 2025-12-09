@@ -12,7 +12,8 @@ export default function TopBar() {
     setShowGrid,
     currentNote,
     createNote,
-    renameItem
+    renameItem,
+    notebooks
   } = useNotebookStore();
 
   const [noteName, setNoteName] = useState('');
@@ -52,17 +53,23 @@ export default function TopBar() {
 
   const handleCreateNew = async () => {
     try {
-      // Erstelle eindeutigen Namen basierend auf Timestamp
-      const timestamp = new Date().toLocaleString('de-DE', {
-        day: '2-digit',
-        month: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).replace(/[,:]/g, '-').replace(/ /g, '_');
+      // Finde einen eindeutigen Namen "Unbenannt", "Unbenannt (1)", etc.
+      let baseName = "Unbenannt";
+      let candidate = baseName;
+      let counter = 1;
       
-      const name = `Unbenannt_${timestamp}`;
-      await createNote('', name);
+      // Prüfe ob Name im Hauptverzeichnis existiert
+      const exists = (name: string) => {
+        const fileName = name.endsWith('.excalidraw') ? name : `${name}.excalidraw`;
+        return notebooks.some(item => item.name === fileName);
+      };
+      
+      while (exists(candidate)) {
+        candidate = `${baseName} (${counter})`;
+        counter++;
+      }
+      
+      await createNote('', candidate);
     } catch (error) {
       console.error('Failed to create note', error);
     }

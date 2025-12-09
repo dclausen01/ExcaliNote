@@ -6,11 +6,14 @@ import UpdateNotification from './components/UpdateNotification';
 import { useNotebookStore } from './store/notebookStore';
 
 function App() {
-  const { sidebarDocked } = useNotebookStore();
+  const { sidebarDocked, theme } = useNotebookStore();
+  
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
 
   return (
     <ErrorBoundary>
-      <div className="flex h-screen w-screen overflow-hidden bg-white">
+      <div className={`flex h-screen w-screen overflow-hidden ${bgColor}`}>
         {/* Sidebar */}
         {sidebarDocked && (
           <div className="h-full flex-shrink-0">

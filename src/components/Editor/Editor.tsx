@@ -111,30 +111,6 @@ export default function Editor() {
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!currentNote) return;
 
-      // Theme-Tracking: Dark/Light Mode von Excalidraw erkennen
-      const currentTheme = appState.theme;
-      
-      // Nur aktualisieren wenn sich das Theme tatsächlich geändert hat (verhindert Update-Loop #185)
-      if (currentTheme && currentTheme !== theme) {
-        setTheme(currentTheme as 'light' | 'dark');
-      }
-      
-      if (currentTheme) {
-        previousThemeRef.current = currentTheme;
-      }
-      
-      const themeChanged = previousThemeRef.current !== undefined && previousThemeRef.current !== currentTheme;
-
-      // Prüfe ob nur das Theme geändert wurde (keine echten Inhaltsänderungen)
-      const elementsUnchanged = previousElementsRef.current === elements;
-      const onlyThemeChanged = themeChanged && elementsUnchanged;
-
-      // Wenn nur das Theme geändert wurde, überspringe das Speichern
-      if (onlyThemeChanged) {
-        logger.info('[Editor] Nur Theme geändert - kein Speichern nötig', { theme: currentTheme });
-        return;
-      }
-
       // Speichere bei echten Inhaltsänderungen
       const dataToSave = {
         elements,
