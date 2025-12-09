@@ -1,5 +1,32 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.2 - 12/9/2025
+
+### 🚀 UX & Stability Improvements
+
+#### ✅ **Top Bar & Navigation:**
+
+- **Neuer "Neue Notiz" Button:** Direkt in der Top Bar für schnelleren Zugriff
+- **Titel-Eingabefeld:** Aktiver Notizname wird angezeigt und kann direkt umbenannt werden
+- **Start-Screen Banner:** Statt leerem Editor wird jetzt das ExcaliNote Banner angezeigt, wenn keine Notiz ausgewählt ist
+
+#### 🎨 **UI Fixes:**
+
+- **Sidebar Dark Mode:** Der untere Bereich der Sidebar ist jetzt korrekt dunkel gefärbt
+
+#### 🐛 **Bugfixes:**
+
+- **React Error #185 behoben:** Absturz beim Öffnen/Erstellen von Notizen durch Fix im Editor-Update-Loop behoben
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Sidebar/Sidebar.tsx`
+- `src/components/Editor/Editor.tsx`
+- `src/components/TopBar.tsx`
+- `package.json` - Version 0.4.2
+
+---
+
 ## Version 0.3.3 - 12/5/2025
 
 ### 🐛 Bugfix - Notizwechsel funktioniert jetzt zuverlässig

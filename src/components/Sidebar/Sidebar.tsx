@@ -74,7 +74,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={`w-64 ${bgColor} border-r ${borderColor} flex flex-col`}>
+    <div className={`w-64 ${bgColor} border-r ${borderColor} flex flex-col h-full`}>
       {/* Header */}
       <div className={`p-4 border-b ${borderColor}`}>
         <h1 className={`text-xl font-bold ${textColor}`}>ExcaliNote</h1>

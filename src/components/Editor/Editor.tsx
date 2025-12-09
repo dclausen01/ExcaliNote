@@ -5,6 +5,7 @@ import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/exca
 import { useNotebookStore } from '../../store/notebookStore';
 import { logger } from '../../utils/logger';
 import './ExcalidrawOverrides.css';
+import bannerImage from '../../assets/excalinotes_banner.png';
 
 export default function Editor() {
   const { 
@@ -112,12 +113,17 @@ export default function Editor() {
 
       // Theme-Tracking: Dark/Light Mode von Excalidraw erkennen
       const currentTheme = appState.theme;
-      const themeChanged = previousThemeRef.current !== undefined && previousThemeRef.current !== currentTheme;
+      
+      // Nur aktualisieren wenn sich das Theme tatsächlich geändert hat (verhindert Update-Loop #185)
+      if (currentTheme && currentTheme !== theme) {
+        setTheme(currentTheme as 'light' | 'dark');
+      }
       
       if (currentTheme) {
-        setTheme(currentTheme as 'light' | 'dark');
         previousThemeRef.current = currentTheme;
       }
+      
+      const themeChanged = previousThemeRef.current !== undefined && previousThemeRef.current !== currentTheme;
 
       // Prüfe ob nur das Theme geändert wurde (keine echten Inhaltsänderungen)
       const elementsUnchanged = previousElementsRef.current === elements;
@@ -211,6 +217,21 @@ export default function Editor() {
     const fileName = parts[parts.length - 1];
     return fileName.replace('.excalidraw', '');
   };
+
+  if (!currentNote) {
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? 'bg-[#1F1B18]' : 'bg-[#FDFBF7]'; // Passend zur Sidebar
+    
+    return (
+      <div className={`flex-1 h-full flex items-center justify-center ${bgColor}`}>
+        <img 
+          src={bannerImage} 
+          alt="ExcaliNote" 
+          className="max-w-lg w-full px-8 opacity-80 object-contain" 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 h-full">
