@@ -71,13 +71,13 @@ export default function TopBar() {
   const isDark = theme === 'dark';
   
   // Styles based on theme
-  const bgColor = isDark ? 'bg-[#1F1B18]' : 'bg-[#FDFBF7]';
-  const borderColor = isDark ? 'border-[#3D3530]' : 'border-[#E8E4DB]';
-  const iconColor = isDark ? 'text-[#E8DFD0]' : 'text-[#3D3530]';
-  const hoverBg = isDark ? 'hover:bg-[#2B2520]' : 'hover:bg-[#F5F2E3]';
-  const activeBg = isDark ? 'bg-[#3D3530]' : 'bg-[#E8E4DB]';
-  const inputBg = isDark ? 'bg-[#2B2520]' : 'bg-white';
-  const inputBorder = isDark ? 'border-[#3D3530]' : 'border-[#D4CFC4]';
+  const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
+  const borderColor = isDark ? 'border-gray-800' : 'border-gray-200';
+  const iconColor = isDark ? 'text-gray-100' : 'text-gray-900';
+  const hoverBg = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const activeBg = isDark ? 'bg-gray-800' : 'bg-gray-200';
+  const inputBg = isDark ? 'bg-gray-800' : 'bg-white';
+  const inputBorder = isDark ? 'border-gray-700' : 'border-gray-300';
 
   return (
     <div className={`h-10 border-b ${borderColor} ${bgColor} flex items-center px-4 gap-2 flex-shrink-0`}>

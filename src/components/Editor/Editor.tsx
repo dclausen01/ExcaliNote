@@ -220,7 +220,7 @@ export default function Editor() {
 
   if (!currentNote) {
     const isDark = theme === 'dark';
-    const bgColor = isDark ? 'bg-[#1F1B18]' : 'bg-[#FDFBF7]'; // Passend zur Sidebar
+    const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
     
     return (
       <div className={`flex-1 h-full flex items-center justify-center ${bgColor}`}>

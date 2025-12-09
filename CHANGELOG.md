@@ -1,5 +1,22 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.3 - 12/9/2025
+
+### 🎨 Design Update
+
+#### ✅ **Design-Anpassung:**
+
+- **Farbschema:** Hintergrundfarben wurden wieder auf klassisches Schwarz/Weiß zurückgesetzt (statt Beige), um besser zum Excalidraw-Look zu passen.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Sidebar/Sidebar.tsx`
+- `src/components/TopBar.tsx`
+- `src/components/Editor/Editor.tsx`
+- `package.json` - Version 0.4.3
+
+---
+
 ## Version 0.4.2 - 12/9/2025
 
 ### 🚀 UX & Stability Improvements
