@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Menu, Grid, Sun, Moon, Grid3X3, Plus } from 'lucide-react';
+import { Menu, Grid, Sun, Moon, Grid3X3, Plus, FolderPlus } from 'lucide-react';
 import { useNotebookStore } from '../store/notebookStore';
+import type { NotebookItem } from '../types';
+
+// Helper to find folder children
+function findFolderChildren(items: NotebookItem[], folderPath: string): NotebookItem[] | null {
+  for (const item of items) {
+    if (item.path === folderPath && item.type === 'folder') {
+      return item.children || [];
+    }
+    if (item.type === 'folder' && item.children) {
+      const result = findFolderChildren(item.children, folderPath);
+      if (result) return result;
+    }
+  }
+  return null;
+}
 
 export default function TopBar() {
   const { 
@@ -12,6 +27,7 @@ export default function TopBar() {
     setShowGrid,
     currentNote,
     createNote,
+    createFolder,
     renameItem,
     notebooks
   } = useNotebookStore();
@@ -51,17 +67,29 @@ export default function TopBar() {
     }
   };
 
+  // Determine parent path based on current note
+  const getParentPath = () => {
+    if (!currentNote) return '';
+    const lastSlashIndex = currentNote.lastIndexOf('/');
+    return lastSlashIndex !== -1 ? currentNote.substring(0, lastSlashIndex) : '';
+  };
+
   const handleCreateNew = async () => {
     try {
+      const parentPath = getParentPath();
+      const contextItems = parentPath 
+        ? (findFolderChildren(notebooks, parentPath) || []) 
+        : notebooks;
+
       // Finde einen eindeutigen Namen "Unbenannt", "Unbenannt (1)", etc.
       let baseName = "Unbenannt";
       let candidate = baseName;
       let counter = 1;
       
-      // Prüfe ob Name im Hauptverzeichnis existiert
+      // Prüfe ob Name im Zielverzeichnis existiert
       const exists = (name: string) => {
         const fileName = name.endsWith('.excalidraw') ? name : `${name}.excalidraw`;
-        return notebooks.some(item => item.name === fileName);
+        return contextItems.some(item => item.name === fileName);
       };
       
       while (exists(candidate)) {
@@ -69,9 +97,35 @@ export default function TopBar() {
         counter++;
       }
       
-      await createNote('', candidate);
+      await createNote(parentPath, candidate);
     } catch (error) {
       console.error('Failed to create note', error);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    try {
+      const parentPath = getParentPath();
+      const contextItems = parentPath 
+        ? (findFolderChildren(notebooks, parentPath) || []) 
+        : notebooks;
+
+      let baseName = "Neuer Ordner";
+      let candidate = baseName;
+      let counter = 1;
+      
+      const exists = (name: string) => {
+        return contextItems.some(item => item.name === name);
+      };
+      
+      while (exists(candidate)) {
+        candidate = `${baseName} (${counter})`;
+        counter++;
+      }
+      
+      await createFolder(parentPath, candidate);
+    } catch (error) {
+      console.error('Failed to create folder', error);
     }
   };
 
@@ -104,6 +158,15 @@ export default function TopBar() {
         title="Neue Notiz erstellen"
       >
         <Plus size={18} />
+      </button>
+
+      {/* New Folder Button */}
+      <button
+        onClick={handleCreateFolder}
+        className={`p-1.5 rounded transition-colors ${hoverBg} ${iconColor}`}
+        title="Neuen Ordner erstellen"
+      >
+        <FolderPlus size={18} />
       </button>
 
       <div className={`h-4 w-px ${borderColor} mx-2`} />

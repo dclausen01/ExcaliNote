@@ -1,5 +1,46 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.6 - 12/9/2025
+
+### 🚀 UX Enhancement - Streamlined Navigation
+
+#### ✅ **Top Bar & Sidebar:**
+
+- **Neue Folder-Erstellung:** Neuer Button in der Top Bar zum Erstellen von Ordnern
+- **Kontext-sensitive Erstellung:** Neue Notizen und Ordner werden jetzt intelligent im Kontext erstellt:
+  - Ist eine Notiz ausgewählt -> Erstellung im gleichen Ordner
+  - Keine Auswahl -> Erstellung im Hauptverzeichnis
+- **Cleanup:** Entfernung der "Notiz" und "Ordner" Buttons aus der Sidebar für eine sauberere UI
+- **Smart Naming:** Automatische kollisionsfreie Benennung für Ordner ("Neuer Ordner", "Neuer Ordner (1)", etc.)
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Sidebar/Sidebar.tsx`
+- `src/components/TopBar.tsx`
+- `package.json` - Version 0.4.6
+
+---
+
+## Version 0.4.5 - 12/9/2025
+
+### 🐛 Bugfix & UX Improvements
+
+#### ✅ **Stability & UI:**
+
+- **React Error #185 Fix:** Endlosen Update-Loop im Editor durch Entfernen der Theme-Sync-Logik behoben
+- **Sidebar Dark Mode:** Weißer Bereich im Dark Mode behoben
+- **Start Screen:** Banner wird korrekt angezeigt wenn keine Notiz geladen ist
+- **Top Bar:** Notizen können direkt umbenannt werden
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/App.tsx`
+- `src/components/Editor/Editor.tsx`
+- `src/components/TopBar.tsx`
+- `package.json` - Version 0.4.5
+
+---
+
 ## Version 0.4.4 - 12/9/2025
 
 ### 🐛 Critical Bugfix
