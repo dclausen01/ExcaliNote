@@ -1,5 +1,22 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.7 - 12/9/2025
+
+### 🐛 Critical Bugfix
+
+#### ✅ **Note Switching Race Condition:**
+
+- **Problem behoben:** Beim schnellen Wechseln zwischen Notizen konnte es vorkommen, dass der Inhalt der falschen Notiz angezeigt wurde.
+- **Ursache:** Asynchrone Ladevorgänge konnten sich überholen (Race Condition), sodass eine frühere Anfrage eine spätere überschrieb.
+- **Lösung:** Implementierung eines Checks nach dem Ladevorgang, der sicherstellt, dass die geladenen Daten noch zur aktuell ausgewählten Notiz gehören. Veraltete Ladeergebnisse werden verworfen.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx`
+- `package.json` - Version 0.4.7
+
+---
+
 ## Version 0.4.6 - 12/9/2025
 
 ### 🚀 UX Enhancement - Streamlined Navigation

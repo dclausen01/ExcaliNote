@@ -63,6 +63,18 @@ export default function Editor() {
         
         // Lade JSON-Datei mit elements, appState UND files (Bilder inline)
         const content = await window.electron.fs.readFile(currentNote);
+        
+        // RACE CONDITION CHECK: 
+        // Prüfe ob die geladene Notiz noch immer die aktuell ausgewählte ist.
+        // Wenn der User inzwischen gewechselt hat, verwerfen wir das Ergebnis.
+        if (currentNote !== loadedNoteRef.current) {
+          logger.info('[Editor] Ladevorgang verworfen - User hat bereits gewechselt', { 
+            loaded: currentNote, 
+            current: loadedNoteRef.current 
+          });
+          return;
+        }
+
         const data = JSON.parse(content);
         
         logger.info('[Editor] Notiz-Daten geladen', { 
