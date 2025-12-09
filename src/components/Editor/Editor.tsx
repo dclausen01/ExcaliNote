@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { Excalidraw, Footer, MainMenu } from '@excalidraw/excalidraw';
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
+import { Loader2 } from 'lucide-react';
 import { useNotebookStore } from '../../store/notebookStore';
 import { logger } from '../../utils/logger';
 import './ExcalidrawOverrides.css';
@@ -34,6 +35,7 @@ export default function Editor() {
     appState?: any;
     files?: BinaryFiles;
   } | null>(null);
+  const [loadedNotePath, setLoadedNotePath] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
@@ -89,6 +91,7 @@ export default function Editor() {
           appState: data.appState || {},
           files: data.files || {}
         });
+        setLoadedNotePath(currentNote);
         
         logger.info('[Editor] InitialData gesetzt', { 
           elementCount: data.elements?.length || 0,
@@ -103,6 +106,7 @@ export default function Editor() {
           appState: {},
           files: {}
         });
+        setLoadedNotePath(currentNote);
       }
     };
 
@@ -206,10 +210,10 @@ export default function Editor() {
     return fileName.replace('.excalidraw', '');
   };
 
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
+
   if (!currentNote) {
-    const isDark = theme === 'dark';
-    const bgColor = isDark ? 'bg-[#121212]' : 'bg-white';
-    
     return (
       <div className={`flex-1 h-full flex items-center justify-center ${bgColor}`}>
         <img 
@@ -218,6 +222,20 @@ export default function Editor() {
           className="max-w-lg w-full px-8 opacity-80 object-contain" 
         />
       </div>
+    );
+  }
+
+  // Zeige Loading-Screen wenn Daten noch nicht für die aktuelle Notiz bereit sind
+  if (currentNote !== loadedNotePath) {
+    const textColor = isDark ? 'text-gray-400' : 'text-gray-500';
+    
+    return (
+       <div className={`flex-1 h-full flex items-center justify-center ${bgColor}`}>
+         <div className={`flex flex-col items-center gap-2 ${textColor}`}>
+            <Loader2 className="animate-spin" size={24} />
+            <span className="text-sm">Lade Notiz...</span>
+         </div>
+       </div>
     );
   }
 

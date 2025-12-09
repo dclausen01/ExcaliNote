@@ -56,6 +56,10 @@ export interface NotebookStore {
   // Erweiterte Ordner für Tree-Navigation
   expandedFolders: Set<string>;
   toggleFolder: (folderId: string) => void;
+
+  // Automatisches Umbenennen nach Erstellung
+  renamingPath: string | null;
+  setRenamingPath: (path: string | null) => void;
   
   // Laden der Ordnerstruktur
   loadNotebooks: () => Promise<void>;

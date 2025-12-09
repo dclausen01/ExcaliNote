@@ -1,5 +1,40 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.9 - 12/9/2025
+
+### 🚀 UX Enhancement - Immediate Edit Mode
+
+#### ✅ **Schnelles Umbenennen:**
+
+- **Feature:** Neu erstellte Notizen und Ordner wechseln jetzt sofort in den "Edit Mode" in der Sidebar.
+- **Vorteil:** Der Nutzer kann direkt nach dem Erstellen einen Namen vergeben, ohne extra klicken zu müssen.
+- **Details:** Das übergeordnete Verzeichnis wird dabei automatisch aufgeklappt, sodass das neue Element sofort sichtbar ist.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/types/index.ts` - Neue Store-Types
+- `src/store/notebookStore.ts` - Rename-Logik und Auto-Expand
+- `src/components/Sidebar/FolderTree.tsx` - Edit-Mode-Trigger
+- `package.json` - Version 0.4.9
+
+---
+
+## Version 0.4.8 - 12/9/2025
+
+### 🐛 Bugfix
+
+#### ✅ **Lagging Display Fix:**
+
+- **Problem behoben:** Beim schnellen Wechseln wurde oft noch kurz der Inhalt der alten Notiz angezeigt ("Nachhinken"), bevor die neue Notiz geladen war.
+- **Lösung:** Einführung eines Lade-Screens, der angezeigt wird, solange die geladenen Daten nicht zur aktuell ausgewählten Notiz passen. Dadurch wird verhindert, dass veraltete Inhalte angezeigt werden.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx`
+- `package.json` - Version 0.4.8
+
+---
+
 ## Version 0.4.7 - 12/9/2025
 
 ### 🐛 Critical Bugfix

@@ -52,6 +52,9 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   sidebarDocked: true,
   showGrid: false,
   expandedFolders: new Set<string>(),
+  renamingPath: null,
+  
+  setRenamingPath: (path) => set({ renamingPath: path }),
   
   setCurrentNote: (path) => set({ currentNote: path }),
   
@@ -98,6 +101,16 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
+      
+      // Parent Folder expanden
+      if (parentPath) {
+        const newExpanded = new Set(get().expandedFolders);
+        newExpanded.add(parentPath);
+        set({ expandedFolders: newExpanded });
+      }
+      
+      // Rename Mode aktivieren
+      set({ renamingPath: newPath });
     } catch (error) {
       logger.error('Fehler beim Erstellen des Ordners', { parentPath, name, error });
       throw error;
@@ -127,6 +140,16 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
+      
+      // Parent Folder expanden
+      if (parentPath) {
+        const newExpanded = new Set(get().expandedFolders);
+        newExpanded.add(parentPath);
+        set({ expandedFolders: newExpanded });
+      }
+      
+      // Rename Mode aktivieren
+      set({ renamingPath: newPath });
       
       // Neue Notiz öffnen
       set({ currentNote: newPath });

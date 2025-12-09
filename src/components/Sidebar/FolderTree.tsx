@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Folder, FolderOpen, FileText, ChevronRight, ChevronDown, Trash2, Edit } from 'lucide-react';
 import { useNotebookStore, joinPath } from '../../store/notebookStore';
 import type { NotebookItem } from '../../types';
@@ -35,8 +35,17 @@ function TreeItem({ item, level }: TreeItemProps) {
     renameItem, 
     theme,
     expandedFolders,
-    toggleFolder
+    toggleFolder,
+    renamingPath,
+    setRenamingPath
   } = useNotebookStore();
+  
+  useEffect(() => {
+    if (renamingPath === item.path) {
+      setIsEditing(true);
+      setRenamingPath(null);
+    }
+  }, [renamingPath, item.path, setRenamingPath]);
   
   const isSelected = currentNote === item.path;
   const isOpen = expandedFolders.has(item.path);
