@@ -1,5 +1,22 @@
 # 🔄 ExcaliNote - Changelog
 
+## Version 0.4.4 - 12/9/2025
+
+### 🐛 Critical Bugfix
+
+#### ✅ **Theme Switching Fix:**
+
+- **Problem behoben:** Beim Wechsel zwischen Dark/Light Mode konnte es erneut zu einem Absturz (Error #185) kommen.
+- **Ursache:** Die `theme` Variable im Editor war nicht im Dependency Array von `handleChange` enthalten, was zu einem veralteten State und damit zu einem endlosen Update-Loop führte.
+- **Lösung:** `theme` wurde zum Dependency Array hinzugefügt, sodass der Handler bei Theme-Änderungen korrekt aktualisiert wird.
+
+#### 📁 **Geänderte Dateien:**
+
+- `src/components/Editor/Editor.tsx`
+- `package.json` - Version 0.4.4
+
+---
+
 ## Version 0.4.3 - 12/9/2025
 
 ### 🎨 Design Update

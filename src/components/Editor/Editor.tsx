@@ -189,7 +189,7 @@ export default function Editor() {
 
       previousElementsRef.current = elements;
     },
-    [currentNote, saveNote, setTheme]
+    [currentNote, saveNote, setTheme, theme]
   );
 
   // Excalidraw API Handler
