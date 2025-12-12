@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Menu, Grid, Sun, Moon, Grid3X3, Plus, FolderPlus } from 'lucide-react';
 import { useNotebookStore } from '../store/notebookStore';
+import { useSyncStore } from '../store/syncStore';
+import { SyncStatusIndicator, SyncSettingsDialog } from './Sync';
 import type { NotebookItem } from '../types';
 
 // Helper to find folder children
@@ -18,10 +20,10 @@ function findFolderChildren(items: NotebookItem[], folderPath: string): Notebook
 }
 
 export default function TopBar() {
-  const { 
-    sidebarDocked, 
-    setSidebarDocked, 
-    theme, 
+  const {
+    sidebarDocked,
+    setSidebarDocked,
+    theme,
     setTheme,
     showGrid,
     setShowGrid,
@@ -32,7 +34,14 @@ export default function TopBar() {
     notebooks
   } = useNotebookStore();
 
+  const { showSyncDialog, setShowSyncDialog, initialize: initSync } = useSyncStore();
+
   const [noteName, setNoteName] = useState('');
+
+  // Sync-Service beim Start initialisieren
+  useEffect(() => {
+    initSync().catch(console.error);
+  }, [initSync]);
 
   // Sync Name mit aktueller Notiz
   useEffect(() => {
@@ -210,6 +219,17 @@ export default function TopBar() {
       >
         {isDark ? <Sun size={18} /> : <Moon size={18} />}
       </button>
+
+      <div className={`h-4 w-px ${borderColor} mx-2`} />
+
+      {/* Sync Status */}
+      <SyncStatusIndicator onClick={() => setShowSyncDialog(true)} />
+
+      {/* Sync Settings Dialog */}
+      <SyncSettingsDialog
+        isOpen={showSyncDialog}
+        onClose={() => setShowSyncDialog(false)}
+      />
     </div>
   );
 }
