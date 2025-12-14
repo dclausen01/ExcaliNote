@@ -32,7 +32,8 @@ async function loadPouchDB(): Promise<any> {
   if (PouchDBModule) return PouchDBModule;
 
   try {
-    const pouchdb = await import('pouchdb');
+    // Verwende pouchdb-browser für Electron/Browser-Umgebungen
+    const pouchdb = await import('pouchdb-browser');
     const pouchdbFind = await import('pouchdb-find');
     PouchDBModule = pouchdb.default || pouchdb;
     PouchDBModule.plugin(pouchdbFind.default || pouchdbFind);
