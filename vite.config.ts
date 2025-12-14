@@ -35,6 +35,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@electron': path.resolve(__dirname, './electron'),
+      // PouchDB: Alle Imports zur Browser-Version umleiten
+      'pouchdb': 'pouchdb-browser',
     },
   },
   server: {
