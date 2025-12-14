@@ -24,12 +24,17 @@
     "@excalidraw/excalidraw": "^0.17.0",
     "electron-updater": "^6.6.2",
     "lucide-react": "^0.555.0",
+    "pouchdb": "^9.0.0",
+    "pouchdb-authentication": "^1.1.3",
+    "pouchdb-find": "^9.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/pouchdb": "^6.4.2",
+    "@types/pouchdb-find": "^7.3.3",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
     "@vitejs/plugin-react": "^4.2.1",
@@ -79,12 +84,16 @@
     "win": {
       "target": "nsis",
       "icon": "assets/excalinotes_icon.png",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "mac": {
       "target": "dmg",
       "icon": "assets/excalinotes_icon.png",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "linux": {
       "target": [
@@ -94,7 +103,9 @@
       ],
       "icon": "assets/excalinotes_icon.png",
       "category": "Office",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     }
   }
 }

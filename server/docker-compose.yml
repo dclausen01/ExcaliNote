@@ -1,0 +1,68 @@
+# ExcaliNote Sync Server
+# Docker Compose Setup für CouchDB-basierte Synchronisation
+#
+# Deployment auf Plesk-Server:
+# 1. Docker Extension in Plesk installieren
+# 2. Diesen Ordner auf den Server kopieren
+# 3. docker-compose up -d ausführen
+# 4. Nginx Proxy konfigurieren (siehe nginx.conf)
+
+version: '3.8'
+
+services:
+  # CouchDB - Hauptdatenbank für Synchronisation
+  couchdb:
+    image: couchdb:3.3
+    container_name: excalinote-couchdb
+    restart: unless-stopped
+    environment:
+      - COUCHDB_USER=${COUCHDB_ADMIN_USER:-admin}
+      - COUCHDB_PASSWORD=${COUCHDB_ADMIN_PASSWORD:-changeme}
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+      - couchdb_config:/opt/couchdb/etc/local.d
+      - ./couchdb/local.ini:/opt/couchdb/etc/local.d/local.ini:ro
+    ports:
+      - "127.0.0.1:5984:5984"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - excalinote-network
+
+  # Optional: Backup-Service
+  backup:
+    image: alpine:3.18
+    container_name: excalinote-backup
+    restart: unless-stopped
+    environment:
+      - COUCHDB_USER=${COUCHDB_ADMIN_USER:-admin}
+      - COUCHDB_PASSWORD=${COUCHDB_ADMIN_PASSWORD:-changeme}
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - couchdb_data:/data/couchdb:ro
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      apk add --no-cache curl && \
+      echo "$${BACKUP_SCHEDULE} /bin/sh /backup.sh" > /etc/crontabs/root && \
+      crond -f -l 2
+    depends_on:
+      - couchdb
+    networks:
+      - excalinote-network
+
+volumes:
+  couchdb_data:
+    driver: local
+  couchdb_config:
+    driver: local
+
+networks:
+  excalinote-network:
+    driver: bridge
