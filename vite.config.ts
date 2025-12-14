@@ -31,6 +31,10 @@ export default defineConfig({
       },
     ]),
   ],
+  // PouchDB benötigt 'global' Variable (Node.js Kompatibilität)
+  define: {
+    global: 'window',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
