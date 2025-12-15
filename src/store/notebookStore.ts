@@ -1,6 +1,30 @@
 import { create } from 'zustand';
 import type { NotebookStore, NotebookItem, FileSystemEntry } from '../types';
 import { logger } from '../utils/logger';
+import { syncService } from '../services/syncService';
+import { generateDocId } from '../types/sync';
+import type { NoteDocument, FolderDocument, ExcalidrawContent } from '../types/sync';
+
+// Map von Dateipfad zu PouchDB Document-ID
+const pathToDocId = new Map<string, string>();
+
+// Hilfsfunktion: Generiert eine konsistente Doc-ID aus einem Pfad
+function getOrCreateDocId(path: string, type: 'note' | 'folder'): string {
+  if (pathToDocId.has(path)) {
+    return pathToDocId.get(path)!;
+  }
+  const docId = generateDocId(type);
+  pathToDocId.set(path, docId);
+  return docId;
+}
+
+// Hilfsfunktion: Parent-Ordner-ID aus Pfad ermitteln
+function getParentDocId(path: string): string | null {
+  const lastSlash = path.lastIndexOf('/');
+  if (lastSlash === -1) return null;
+  const parentPath = path.substring(0, lastSlash);
+  return pathToDocId.get(parentPath) || null;
+}
 
 // Hilfsfunktion: Pfade sicher zusammenfügen
 export function joinPath(...parts: string[]): string {
@@ -97,18 +121,41 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   createFolder: async (parentPath, name) => {
     try {
       const newPath = joinPath(parentPath, name);
+
+      // 1. Im Dateisystem erstellen
       await window.electron.fs.createDir(newPath);
-      
+
+      // 2. In PouchDB speichern (für Synchronisation)
+      try {
+        const docId = getOrCreateDocId(newPath, 'folder');
+
+        const folderDoc: Omit<FolderDocument, '_rev'> = {
+          _id: docId,
+          type: 'folder',
+          name: name,
+          parentId: getParentDocId(newPath),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: 'local',
+          modifiedBy: 'local',
+        };
+
+        await syncService.saveFolder(folderDoc);
+        logger.debug('Neuer Ordner in PouchDB erstellt', { newPath, docId });
+      } catch (syncError) {
+        logger.warn('Fehler beim Erstellen in PouchDB', { newPath, error: syncError });
+      }
+
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
-      
+
       // Parent Folder expanden
       if (parentPath) {
         const newExpanded = new Set(get().expandedFolders);
         newExpanded.add(parentPath);
         set({ expandedFolders: newExpanded });
       }
-      
+
       // Rename Mode aktivieren
       set({ renamingPath: newPath });
     } catch (error) {
@@ -122,9 +169,9 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
       // Stelle sicher, dass der Name die .excalidraw-Erweiterung hat
       const noteName = name.endsWith('.excalidraw') ? name : `${name}.excalidraw`;
       const newPath = joinPath(parentPath, noteName);
-      
+
       // Erstelle eine leere Excalidraw-Datei
-      const emptyData = {
+      const emptyData: ExcalidrawContent = {
         type: 'excalidraw',
         version: 2,
         source: 'https://excalinote.app',
@@ -135,22 +182,46 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
         },
         files: {},
       };
-      
+
+      // 1. Im Dateisystem speichern
       await window.electron.fs.writeFile(newPath, JSON.stringify(emptyData, null, 2));
-      
+
+      // 2. In PouchDB speichern (für Synchronisation)
+      try {
+        const docId = getOrCreateDocId(newPath, 'note');
+        const displayName = name.replace('.excalidraw', '');
+
+        const noteDoc: Omit<NoteDocument, '_rev'> = {
+          _id: docId,
+          type: 'note',
+          name: displayName,
+          parentId: getParentDocId(newPath),
+          content: emptyData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: 'local',
+          modifiedBy: 'local',
+        };
+
+        await syncService.saveNote(noteDoc);
+        logger.debug('Neue Notiz in PouchDB erstellt', { newPath, docId });
+      } catch (syncError) {
+        logger.warn('Fehler beim Erstellen in PouchDB', { newPath, error: syncError });
+      }
+
       // Ordnerstruktur neu laden
       await get().loadNotebooks();
-      
+
       // Parent Folder expanden
       if (parentPath) {
         const newExpanded = new Set(get().expandedFolders);
         newExpanded.add(parentPath);
         set({ expandedFolders: newExpanded });
       }
-      
+
       // Rename Mode aktivieren
       set({ renamingPath: newPath });
-      
+
       // Neue Notiz öffnen
       set({ currentNote: newPath });
     } catch (error) {
@@ -196,7 +267,32 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
   
   saveNote: async (path, data) => {
     try {
+      // 1. Im Dateisystem speichern (für lokale Nutzung)
       await window.electron.fs.writeFile(path, JSON.stringify(data, null, 2));
+
+      // 2. In PouchDB speichern (für Synchronisation)
+      try {
+        const docId = getOrCreateDocId(path, 'note');
+        const fileName = path.split('/').pop()?.replace('.excalidraw', '') || 'Unbenannt';
+
+        const noteDoc: Omit<NoteDocument, '_rev'> = {
+          _id: docId,
+          type: 'note',
+          name: fileName,
+          parentId: getParentDocId(path),
+          content: data as ExcalidrawContent,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: 'local',
+          modifiedBy: 'local',
+        };
+
+        await syncService.saveNote(noteDoc);
+        logger.debug('Notiz in PouchDB gespeichert', { path, docId });
+      } catch (syncError) {
+        // Sync-Fehler loggen, aber nicht werfen - lokales Speichern hat funktioniert
+        logger.warn('Fehler beim Speichern in PouchDB', { path, error: syncError });
+      }
     } catch (error) {
       logger.error('Fehler beim Speichern der Notiz', { path, error });
       throw error;

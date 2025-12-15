@@ -255,7 +255,7 @@ class SyncService {
    */
   private buildDatabaseUrl(config: SyncServerConfig): string {
     const baseUrl = config.serverUrl.replace(/\/$/, '');
-    const dbName = config.databaseName || `excalinote_${config.username}`;
+    const dbName = config.databaseName || `excalinote_personal_${config.username}`;
     return `${baseUrl}/${dbName}`;
   }
 
