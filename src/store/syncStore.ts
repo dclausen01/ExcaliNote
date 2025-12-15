@@ -80,7 +80,13 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   isInitialized: false,
   conflicts: [],
   migrationProgress: null,
-  settings: syncService.getSettings(),
+  // Settings werden lazy bei der Initialisierung geladen
+  settings: {
+    enabled: false,
+    server: null,
+    autoSync: true,
+    syncInterval: 30000,
+  },
 
   // UI-Status
   showSyncDialog: false,

@@ -5,9 +5,6 @@
  * Synchronisation mit einem entfernten CouchDB-Server.
  */
 
-import PouchDB from 'pouchdb';
-import PouchDBFind from 'pouchdb-find';
-
 import type {
   SyncDocument,
   NoteDocument,
@@ -22,19 +19,37 @@ import type {
   ConflictInfo,
   ExcalidrawContent,
   FolderType,
-  generateDocId,
 } from '../types/sync';
 import { logger } from '../utils/logger';
 
-// PouchDB Plugins registrieren
-PouchDB.plugin(PouchDBFind);
+// ============================================================================
+// PouchDB Lazy Loading
+// ============================================================================
+
+let PouchDBModule: any = null;
+
+async function loadPouchDB(): Promise<any> {
+  if (PouchDBModule) return PouchDBModule;
+
+  try {
+    // Verwende pouchdb-browser für Electron/Browser-Umgebungen
+    const pouchdb = await import('pouchdb-browser');
+    const pouchdbFind = await import('pouchdb-find');
+    PouchDBModule = pouchdb.default || pouchdb;
+    PouchDBModule.plugin(pouchdbFind.default || pouchdbFind);
+    return PouchDBModule;
+  } catch (error) {
+    logger.error('Fehler beim Laden von PouchDB', { error });
+    throw error;
+  }
+}
 
 // ============================================================================
 // Typen für PouchDB
 // ============================================================================
 
-type PouchDBDatabase = PouchDB.Database<SyncDocument>;
-type SyncHandler = PouchDB.Replication.Sync<SyncDocument>;
+type PouchDBDatabase = any;
+type SyncHandler = any;
 
 // ============================================================================
 // Event-Typen
@@ -96,6 +111,9 @@ class SyncService {
     if (this.isInitialized) return;
 
     try {
+      // PouchDB lazy laden
+      const PouchDB = await loadPouchDB();
+
       // Lokale Datenbank erstellen (IndexedDB im Browser/Electron)
       this.localDB = new PouchDB('excalinote_local') as PouchDBDatabase;
 
@@ -166,6 +184,7 @@ class SyncService {
     this.updateState({ status: 'connecting', error: null });
 
     try {
+      const PouchDB = await loadPouchDB();
       const dbUrl = this.buildDatabaseUrl(config);
 
       // Remote-Datenbank mit Authentifizierung

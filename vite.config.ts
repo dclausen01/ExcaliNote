@@ -31,10 +31,16 @@ export default defineConfig({
       },
     ]),
   ],
+  // PouchDB benötigt 'global' Variable (Node.js Kompatibilität)
+  define: {
+    global: 'window',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@electron': path.resolve(__dirname, './electron'),
+      // PouchDB: Alle Imports zur Browser-Version umleiten
+      'pouchdb': 'pouchdb-browser',
     },
   },
   server: {
