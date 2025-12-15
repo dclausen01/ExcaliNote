@@ -182,7 +182,7 @@ export default function TopBar() {
 
       {/* Title Input (nur wenn Notiz aktiv) */}
       {currentNote && (
-        <div className="flex-1 max-w-md">
+        <div className="flex-1 min-w-0 max-w-md">
           <input
             type="text"
             value={noteName}
@@ -198,32 +198,35 @@ export default function TopBar() {
           />
         </div>
       )}
-      
-      {/* Spacer to push buttons to right if no note */}
-      {!currentNote && <div className="flex-1" />}
 
-      {/* Grid Toggle */}
-      <button
-        onClick={() => setShowGrid(!showGrid)}
-        className={`p-1.5 rounded transition-colors ${hoverBg} ${showGrid ? activeBg : ''} ${iconColor}`}
-        title={showGrid ? "Raster ausblenden" : "Raster anzeigen"}
-      >
-        {showGrid ? <Grid3X3 size={18} /> : <Grid size={18} />}
-      </button>
+      {/* Spacer - immer vorhanden, um rechte Buttons zu fixieren */}
+      <div className="flex-1" />
 
-      {/* Theme Toggle */}
-      <button
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className={`p-1.5 rounded transition-colors ${hoverBg} ${iconColor}`}
-        title={isDark ? "Heller Modus" : "Dunkler Modus"}
-      >
-        {isDark ? <Sun size={18} /> : <Moon size={18} />}
-      </button>
+      {/* Rechte Button-Gruppe - fest positioniert */}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        {/* Grid Toggle */}
+        <button
+          onClick={() => setShowGrid(!showGrid)}
+          className={`p-1.5 rounded transition-colors ${hoverBg} ${showGrid ? activeBg : ''} ${iconColor}`}
+          title={showGrid ? "Raster ausblenden" : "Raster anzeigen"}
+        >
+          {showGrid ? <Grid3X3 size={18} /> : <Grid size={18} />}
+        </button>
 
-      <div className={`h-4 w-px ${borderColor} mx-2`} />
+        {/* Theme Toggle */}
+        <button
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className={`p-1.5 rounded transition-colors ${hoverBg} ${iconColor}`}
+          title={isDark ? "Heller Modus" : "Dunkler Modus"}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
 
-      {/* Sync Status */}
-      <SyncStatusIndicator onClick={() => setShowSyncDialog(true)} />
+        <div className={`h-4 w-px ${borderColor} mx-2`} />
+
+        {/* Sync Status */}
+        <SyncStatusIndicator onClick={() => setShowSyncDialog(true)} />
+      </div>
 
       {/* Sync Settings Dialog */}
       <SyncSettingsDialog

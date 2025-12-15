@@ -64,15 +64,11 @@ function removePathMapping(path: string): void {
 function getParentDocId(path: string): string | null {
   const parts = path.split('/');
   if (parts.length <= 1) {
-    return null; // Root level
+    return null;
   }
   const parentPath = parts.slice(0, -1).join('/');
   return getDocIdForPath(parentPath);
 }
-
-// ============================================================================
-// Hilfsfunktionen
-// ============================================================================
 
 // Hilfsfunktion: Pfade sicher zusammenfügen
 export function joinPath(...parts: string[]): string {
@@ -116,7 +112,7 @@ async function loadFolderRecursive(path: string): Promise<NotebookItem[]> {
 }
 
 // ============================================================================
-// Sync-Hilfsfunktionen (fail-safe)
+// Sync-Hilfsfunktionen (fail-safe, non-blocking)
 // ============================================================================
 
 async function syncSaveNote(path: string, data: ExcalidrawContent): Promise<void> {
@@ -129,6 +125,7 @@ async function syncSaveNote(path: string, data: ExcalidrawContent): Promise<void
       type: 'note',
       name: fileName,
       parentId: getParentDocId(path),
+      localPath: path,
       content: data,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -139,7 +136,6 @@ async function syncSaveNote(path: string, data: ExcalidrawContent): Promise<void
     await syncService.saveNote(noteDoc);
     logger.debug('Notiz in PouchDB gespeichert', { path, docId });
   } catch (error) {
-    // Sync-Fehler sollen lokale Operation nicht blockieren
     logger.warn('Fehler beim Sync-Speichern der Notiz (non-blocking)', { path, error });
   }
 }
@@ -153,6 +149,7 @@ async function syncSaveFolder(path: string, name: string): Promise<void> {
       type: 'folder',
       name: name,
       parentId: getParentDocId(path),
+      localPath: path,
       folderType: 'standard',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -163,7 +160,6 @@ async function syncSaveFolder(path: string, name: string): Promise<void> {
     await syncService.saveFolder(folderDoc);
     logger.debug('Ordner in PouchDB gespeichert', { path, docId });
   } catch (error) {
-    // Sync-Fehler sollen lokale Operation nicht blockieren
     logger.warn('Fehler beim Sync-Speichern des Ordners (non-blocking)', { path, error });
   }
 }
@@ -177,7 +173,6 @@ async function syncDeleteItem(path: string): Promise<void> {
       logger.debug('Element aus PouchDB gelöscht', { path, docId });
     }
   } catch (error) {
-    // Sync-Fehler sollen lokale Operation nicht blockieren
     logger.warn('Fehler beim Sync-Löschen des Elements (non-blocking)', { path, error });
   }
 }
@@ -186,13 +181,11 @@ async function syncRenameItem(oldPath: string, newPath: string, isFolder: boolea
   try {
     const docId = getDocIdForPath(oldPath);
     if (docId) {
-      // Hole das bestehende Dokument
       const doc = isFolder
         ? await syncService.getFolder(docId)
         : await syncService.getNote(docId);
 
       if (doc) {
-        // Aktualisiere den Namen
         const newName = newPath.split('/').pop()?.replace('.excalidraw', '') || 'Unbenannt';
         const newParentId = getParentDocId(newPath);
 
@@ -201,33 +194,23 @@ async function syncRenameItem(oldPath: string, newPath: string, isFolder: boolea
             ...(doc as FolderDocument),
             name: newName,
             parentId: newParentId,
+            localPath: newPath,
           });
         } else {
           await syncService.saveNote({
             ...(doc as NoteDocument),
             name: newName,
             parentId: newParentId,
+            localPath: newPath,
           });
         }
 
-        // Aktualisiere das Path-Mapping
         updatePathMapping(oldPath, newPath);
         logger.debug('Element in PouchDB umbenannt', { oldPath, newPath, docId });
       }
     }
   } catch (error) {
-    // Sync-Fehler sollen lokale Operation nicht blockieren
-    logger.warn('Fehler beim Sync-Umbenennen des Elements (non-blocking)', { oldPath, newPath, error });
-  }
-}
-
-async function syncDeleteRecursive(path: string, items: NotebookItem[]): Promise<void> {
-  // Lösche alle Kinder rekursiv
-  for (const item of items) {
-    if (item.children && item.children.length > 0) {
-      await syncDeleteRecursive(item.path, item.children);
-    }
-    await syncDeleteItem(item.path);
+    logger.warn('Fehler beim Sync-Umbenennen (non-blocking)', { oldPath, newPath, error });
   }
 }
 
@@ -362,36 +345,13 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
 
   deleteItem: async (path) => {
     try {
-      // Finde das Item um zu prüfen ob es ein Ordner ist (für rekursives Sync-Löschen)
-      const findItem = (items: NotebookItem[], targetPath: string): NotebookItem | null => {
-        for (const item of items) {
-          if (item.path === targetPath) return item;
-          if (item.children) {
-            const found = findItem(item.children, targetPath);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      const item = findItem(get().notebooks, path);
-
       // 1. Im Dateisystem löschen
       await window.electron.fs.delete(path);
 
-      // 2. Aus PouchDB löschen (non-blocking, rekursiv für Ordner)
-      if (item) {
-        if (item.type === 'folder' && item.children) {
-          // Rekursiv alle Kinder löschen
-          syncDeleteRecursive(path, item.children).then(() => {
-            syncDeleteItem(path);
-          });
-        } else {
-          syncDeleteItem(path);
-        }
-      }
+      // 2. Aus PouchDB löschen (non-blocking)
+      syncDeleteItem(path);
 
-      // Wenn die gelöschte Datei die aktuell geöffnete war (oder darin enthalten war), schließe sie
+      // Wenn die gelöschte Datei die aktuell geöffnete war, schließe sie
       const currentNote = get().currentNote;
       if (currentNote && (currentNote === path || currentNote.startsWith(path + '/'))) {
         set({ currentNote: null });
@@ -417,20 +377,16 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
 
       // Bei Ordnern: Auch alle Kinder-Pfade aktualisieren
       if (isFolder) {
-        // Aktualisiere alle Pfad-Mappings für Kinder
-        const updateChildMappings = (oldParent: string, newParent: string) => {
-          const keysToUpdate: [string, string][] = [];
-          pathToDocId.forEach((docId, path) => {
-            if (path.startsWith(oldParent + '/')) {
-              const newChildPath = newParent + path.substring(oldParent.length);
-              keysToUpdate.push([path, newChildPath]);
-            }
-          });
-          keysToUpdate.forEach(([oldP, newP]) => {
-            updatePathMapping(oldP, newP);
-          });
-        };
-        updateChildMappings(oldPath, newPath);
+        const keysToUpdate: [string, string][] = [];
+        pathToDocId.forEach((_, path) => {
+          if (path.startsWith(oldPath + '/')) {
+            const newChildPath = newPath + path.substring(oldPath.length);
+            keysToUpdate.push([path, newChildPath]);
+          }
+        });
+        keysToUpdate.forEach(([oldP, newP]) => {
+          updatePathMapping(oldP, newP);
+        });
       }
 
       // Wenn die umbenannte Datei die aktuell geöffnete war, aktualisiere den Pfad
@@ -439,7 +395,6 @@ export const useNotebookStore = create<NotebookStore>((set, get) => ({
         if (currentNote === oldPath) {
           set({ currentNote: newPath });
         } else if (currentNote.startsWith(oldPath + '/')) {
-          // Notiz war in einem umbenannten Ordner
           const newNotePath = newPath + currentNote.substring(oldPath.length);
           set({ currentNote: newNotePath });
         }
