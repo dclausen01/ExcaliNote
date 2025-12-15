@@ -30,6 +30,66 @@ import { logger } from '../utils/logger';
 PouchDB.plugin(PouchDBFind);
 
 // ============================================================================
+// Passwort-Verschlüsselung (einfache Obfuskation)
+// ============================================================================
+
+const CREDENTIAL_KEY = 'excalinote_sync_credentials';
+
+function encryptPassword(password: string): string {
+  // Einfache Base64-Kodierung mit Prefix für Erkennbarkeit
+  return 'enc:' + btoa(unescape(encodeURIComponent(password)));
+}
+
+function decryptPassword(encrypted: string): string {
+  if (!encrypted.startsWith('enc:')) {
+    return encrypted; // Nicht verschlüsselt (Legacy)
+  }
+  try {
+    return decodeURIComponent(escape(atob(encrypted.slice(4))));
+  } catch {
+    return '';
+  }
+}
+
+function saveCredentials(serverUrl: string, username: string, password: string): void {
+  try {
+    const credentials = {
+      serverUrl,
+      username,
+      password: encryptPassword(password),
+    };
+    localStorage.setItem(CREDENTIAL_KEY, JSON.stringify(credentials));
+  } catch (error) {
+    logger.warn('Fehler beim Speichern der Anmeldedaten', { error });
+  }
+}
+
+function loadCredentials(): { serverUrl: string; username: string; password: string } | null {
+  try {
+    const stored = localStorage.getItem(CREDENTIAL_KEY);
+    if (stored) {
+      const credentials = JSON.parse(stored);
+      return {
+        serverUrl: credentials.serverUrl,
+        username: credentials.username,
+        password: decryptPassword(credentials.password),
+      };
+    }
+  } catch (error) {
+    logger.warn('Fehler beim Laden der Anmeldedaten', { error });
+  }
+  return null;
+}
+
+function clearCredentials(): void {
+  try {
+    localStorage.removeItem(CREDENTIAL_KEY);
+  } catch (error) {
+    logger.warn('Fehler beim Löschen der Anmeldedaten', { error });
+  }
+}
+
+// ============================================================================
 // Typen für PouchDB
 // ============================================================================
 
@@ -105,13 +165,24 @@ class SyncService {
       this.isInitialized = true;
       logger.info('SyncService initialisiert');
 
-      // Automatische Verbindung, falls konfiguriert
-      if (this.settings.enabled && this.settings.server) {
-        await this.connect(this.settings.server);
+      // Automatische Verbindung mit gespeicherten Anmeldedaten
+      if (this.settings.enabled) {
+        const credentials = loadCredentials();
+        if (credentials && credentials.password) {
+          // Verbinde mit gespeicherten Anmeldedaten
+          await this.connect({
+            serverUrl: credentials.serverUrl,
+            username: credentials.username,
+            password: credentials.password,
+          });
+        } else if (this.settings.server) {
+          // Fallback: Versuche ohne Passwort (wird fehlschlagen, aber zeigt Status)
+          logger.warn('Keine gespeicherten Anmeldedaten gefunden');
+        }
       }
     } catch (error) {
       logger.error('Fehler bei SyncService-Initialisierung', { error });
-      throw error;
+      // Fehler beim Auto-Connect nicht werfen, App soll trotzdem starten
     }
   }
 
@@ -180,7 +251,12 @@ class SyncService {
       // Verbindung testen
       await this.remoteDB.info();
 
-      // Einstellungen speichern (ohne Passwort)
+      // Anmeldedaten sicher speichern (mit Passwort!)
+      if (config.password) {
+        saveCredentials(config.serverUrl, config.username, config.password);
+      }
+
+      // Einstellungen speichern (ohne Passwort in den Einstellungen)
       this.settings.server = {
         ...config,
         password: undefined,
@@ -190,6 +266,13 @@ class SyncService {
 
       // Live-Sync starten
       this.startSync();
+
+      // Status auf "synced" setzen (Verbindung erfolgreich)
+      this.updateState({
+        status: 'synced',
+        lastSyncedAt: new Date().toISOString(),
+        error: null,
+      });
 
       logger.info('Verbindung hergestellt', { serverUrl: config.serverUrl });
     } catch (error: any) {
@@ -220,7 +303,11 @@ class SyncService {
       this.remoteDB = null;
     }
 
+    // Anmeldedaten löschen
+    clearCredentials();
+
     this.settings.enabled = false;
+    this.settings.server = null;
     this.saveSettings();
 
     this.updateState({
@@ -236,7 +323,7 @@ class SyncService {
    */
   private buildDatabaseUrl(config: SyncServerConfig): string {
     const baseUrl = config.serverUrl.replace(/\/$/, '');
-    const dbName = config.databaseName || `excalinote_${config.username}`;
+    const dbName = config.databaseName || `excalinote_personal_${config.username}`;
     return `${baseUrl}/${dbName}`;
   }
 
@@ -318,10 +405,15 @@ class SyncService {
       },
     };
 
-    this.updateState({ status: 'syncing' });
+    // Nur "syncing" anzeigen wenn mehrere Dokumente übertragen werden
+    // Kleine Änderungen (1-2 Docs) nicht als "syncing" anzeigen
+    const docsCount = changeInfo.change.docs.length;
+    if (docsCount > 2) {
+      this.updateState({ status: 'syncing' });
+    }
 
     // Benachrichtige Listener über geänderte Dokumente
-    if (changeInfo.change.docs.length > 0) {
+    if (docsCount > 0) {
       this.emitChange(changeInfo.change.docs);
     }
 
@@ -330,7 +422,7 @@ class SyncService {
 
     logger.debug('Sync-Änderung', {
       direction: changeInfo.direction,
-      docs: changeInfo.change.docs.length,
+      docs: docsCount,
     });
   }
 
