@@ -263,7 +263,7 @@ export default function Editor() {
           onChange={handleChange}
           initialData={initialData}
           validateEmbeddable={(url) => {
-            // Erlaube alle http/https URLs für Web Embeds
+            // Erlaube alle http/https URLs für Web Embeds (nicht nur bekannte Domains)
             if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
               return true;
             }
