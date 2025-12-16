@@ -6,7 +6,8 @@
 |------------|---------------|
 | CouchDB Port | 5984 |
 | Admin-UI (Fauxton) | `http://localhost:5984/_utils` |
-| Datenbank-Muster | `excalinote_<username>` |
+| Datenbank-Muster (persönlich) | `excalinote_personal_<username>` |
+| Datenbank-Muster (Klasse) | `excalinote_class_<classId>` |
 
 ---
 
@@ -66,10 +67,10 @@ curl http://admin:password@localhost:5984/_users/_all_docs
 ### Datenbank für Benutzer erstellen
 ```bash
 # Datenbank erstellen
-curl -X PUT http://admin:password@localhost:5984/excalinote_<username>
+curl -X PUT http://admin:password@localhost:5984/excalinote_personal_<username>
 
 # Benutzerrechte setzen
-curl -X PUT http://admin:password@localhost:5984/excalinote_<username>/_security \
+curl -X PUT http://admin:password@localhost:5984/excalinote_personal_<username>/_security \
   -H "Content-Type: application/json" \
   -d '{
     "admins": { "names": [], "roles": [] },
@@ -84,7 +85,7 @@ curl http://admin:password@localhost:5984/_all_dbs
 
 ### Datenbank löschen
 ```bash
-curl -X DELETE http://admin:password@localhost:5984/excalinote_<username>
+curl -X DELETE http://admin:password@localhost:5984/excalinote_personal_<username>
 ```
 
 ---
@@ -104,10 +105,10 @@ curl -X PUT "$SERVER/_users/org.couchdb.user:$USERNAME" \
   -d "{\"name\":\"$USERNAME\",\"password\":\"$PASSWORD\",\"roles\":[],\"type\":\"user\"}"
 
 # 2. Datenbank erstellen
-curl -X PUT "$SERVER/excalinote_$USERNAME" -u "$ADMIN"
+curl -X PUT "$SERVER/excalinote_personal_$USERNAME" -u "$ADMIN"
 
 # 3. Rechte setzen
-curl -X PUT "$SERVER/excalinote_$USERNAME/_security" \
+curl -X PUT "$SERVER/excalinote_personal_$USERNAME/_security" \
   -u "$ADMIN" -H "Content-Type: application/json" \
   -d "{\"members\":{\"names\":[\"$USERNAME\"],\"roles\":[]}}"
 
@@ -120,13 +121,13 @@ echo "Benutzer $USERNAME eingerichtet!"
 
 ### Datenbank exportieren
 ```bash
-curl http://admin:password@localhost:5984/excalinote_<username>/_all_docs?include_docs=true \
+curl http://admin:password@localhost:5984/excalinote_personal_<username>/_all_docs?include_docs=true \
   > backup_<username>.json
 ```
 
 ### Datenbank importieren
 ```bash
-curl -X POST http://admin:password@localhost:5984/excalinote_<username>/_bulk_docs \
+curl -X POST http://admin:password@localhost:5984/excalinote_personal_<username>/_bulk_docs \
   -H "Content-Type: application/json" \
   -d @backup_<username>.json
 ```
@@ -148,12 +149,12 @@ curl http://localhost:5984/
 
 ### Datenbank-Info
 ```bash
-curl http://admin:password@localhost:5984/excalinote_<username>
+curl http://admin:password@localhost:5984/excalinote_personal_<username>
 ```
 
 ### Kompaktierung (Speicher freigeben)
 ```bash
-curl -X POST http://admin:password@localhost:5984/excalinote_<username>/_compact \
+curl -X POST http://admin:password@localhost:5984/excalinote_personal_<username>/_compact \
   -H "Content-Type: application/json"
 ```
 
