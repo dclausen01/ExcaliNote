@@ -71,14 +71,48 @@ function createWindow() {
     icon: iconPath
   });
 
-  // Allow loading external content for embedded websites
+  // Allow loading external content for embedded websites (iframes)
   mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    // Entferne Header, die das Einbetten in iframes blockieren
+    const responseHeaders = { ...details.responseHeaders };
+
+    // Diese Header verhindern das Einbetten - entfernen für Web Embeds
+    delete responseHeaders['x-frame-options'];
+    delete responseHeaders['X-Frame-Options'];
+    delete responseHeaders['content-security-policy'];
+    delete responseHeaders['Content-Security-Policy'];
+
     callback({
       responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:"]
+        ...responseHeaders,
+        // Unsere eigene CSP die Embeds erlaubt
+        'Content-Security-Policy': [
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:; " +
+          "frame-src 'self' https: http:; " +
+          "child-src 'self' https: http: blob:; " +
+          "frame-ancestors 'self' *"
+        ]
       }
     });
+  });
+
+  // Erlaube Navigation in iframes zu externen URLs
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Externe Links im Standard-Browser öffnen
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      require('electron').shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  // Erlaube iframes, externe Inhalte zu laden
+  mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+    const allowedPermissions = ['media', 'geolocation', 'notifications', 'fullscreen'];
+    if (allowedPermissions.includes(permission)) {
+      callback(true);
+    } else {
+      callback(false);
+    }
   });
 
   // In development mode, load from vite dev server

@@ -16,70 +16,8 @@ import type {
   MigrationProgress,
   NoteDocument,
   FolderDocument,
-  SyncDocument,
 } from '../types/sync';
 import { logger } from '../utils/logger';
-
-// ============================================================================
-// Lokale Dateierstellung aus Sync-Dokumenten
-// ============================================================================
-
-/**
- * Erstellt lokale Dateien/Ordner aus synchronisierten Dokumenten
- * @returns Anzahl der erstellten Dateien/Ordner
- */
-async function createLocalFilesFromSyncDocs(docs: SyncDocument[]): Promise<number> {
-  if (!window.electron?.fs) return 0;
-
-  let createdCount = 0;
-
-  for (const doc of docs) {
-    try {
-      // Überspringe gelöschte Dokumente
-      if (doc._deleted) continue;
-
-      if (doc.type === 'folder') {
-        const folderDoc = doc as FolderDocument;
-        if (folderDoc.localPath) {
-          // Prüfe ob Ordner existiert, wenn nicht erstelle ihn
-          const exists = await window.electron.fs.exists(folderDoc.localPath);
-          if (!exists) {
-            await window.electron.fs.createDir(folderDoc.localPath);
-            logger.info('Ordner aus Sync erstellt', { path: folderDoc.localPath });
-            createdCount++;
-          }
-        }
-      } else if (doc.type === 'note') {
-        const noteDoc = doc as NoteDocument;
-        if (noteDoc.localPath && noteDoc.content) {
-          // Prüfe ob Datei existiert
-          const exists = await window.electron.fs.exists(noteDoc.localPath);
-          if (!exists) {
-            // Stelle sicher, dass Parent-Ordner existiert
-            const parentPath = noteDoc.localPath.split('/').slice(0, -1).join('/');
-            if (parentPath) {
-              const parentExists = await window.electron.fs.exists(parentPath);
-              if (!parentExists) {
-                await window.electron.fs.createDir(parentPath);
-              }
-            }
-            // Erstelle die Notiz-Datei
-            await window.electron.fs.writeFile(
-              noteDoc.localPath,
-              JSON.stringify(noteDoc.content, null, 2)
-            );
-            logger.info('Notiz aus Sync erstellt', { path: noteDoc.localPath });
-            createdCount++;
-          }
-        }
-      }
-    } catch (error) {
-      logger.warn('Fehler beim Erstellen lokaler Datei aus Sync', { docId: doc._id, error });
-    }
-  }
-
-  return createdCount;
-}
 
 // ============================================================================
 // Store-Typen
@@ -91,8 +29,6 @@ interface SyncStore {
   isInitialized: boolean;
   conflicts: ConflictInfo[];
   migrationProgress: MigrationProgress | null;
-  /** Timestamp des letzten Sync-Updates (für UI-Refresh) */
-  lastSyncUpdate: number;
 
   // Einstellungen
   settings: SyncSettings;
@@ -144,7 +80,6 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
   isInitialized: false,
   conflicts: [],
   migrationProgress: null,
-  lastSyncUpdate: 0,
   settings: syncService.getSettings(),
 
   // UI-Status
@@ -166,15 +101,6 @@ export const useSyncStore = create<SyncStore>((set, get) => ({
       // Event-Listener registrieren
       syncService.onStateChange((state) => {
         set({ syncState: state });
-      });
-
-      // Sync-Änderungen: Erstelle lokale Dateien aus empfangenen Dokumenten
-      syncService.onChange(async (docs) => {
-        const createdCount = await createLocalFilesFromSyncDocs(docs);
-        // Trigger UI-Refresh wenn Dateien erstellt wurden
-        if (createdCount > 0) {
-          set({ lastSyncUpdate: Date.now() });
-        }
       });
 
       syncService.onConflict((conflict) => {

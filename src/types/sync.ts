@@ -54,8 +54,6 @@ export interface NoteDocument extends SyncDocument {
   parentId: string | null;
   name: string;
   content: ExcalidrawContent;
-  /** Lokaler Dateipfad (relativ zum Basis-Verzeichnis) */
-  localPath?: string;
   /** Für Class Notebooks: Zugriffsebene */
   accessLevel?: AccessLevel;
   /** Für Class Notebooks: Besitzer (bei Schüler-Ordnern) */
@@ -79,8 +77,6 @@ export interface FolderDocument extends SyncDocument {
   type: 'folder';
   parentId: string | null;
   name: string;
-  /** Lokaler Ordnerpfad (relativ zum Basis-Verzeichnis) */
-  localPath?: string;
   /** Ordner-Typ für Berechtigungen */
   folderType: FolderType;
   /** Besitzer des Ordners (bei Schüler-Ordnern) */

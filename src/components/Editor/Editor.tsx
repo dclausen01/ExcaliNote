@@ -4,7 +4,6 @@ import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 import { AppState, BinaryFiles, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
 import { Loader2 } from 'lucide-react';
 import { useNotebookStore } from '../../store/notebookStore';
-import { useSyncStore } from '../../store/syncStore';
 import { logger } from '../../utils/logger';
 import './ExcalidrawOverrides.css';
 import bannerImage from '../../assets/excalinotes_banner.png';
@@ -46,21 +45,10 @@ export default function Editor() {
   const loadedNoteRef = useRef<string | null>(null);
   const previousThemeRef = useRef<string | undefined>(undefined);
 
-  // Sync-Store für Datei-Updates
-  const { lastSyncUpdate } = useSyncStore();
-
   // Initial: Notizbücher laden
   useEffect(() => {
     loadNotebooks();
   }, [loadNotebooks]);
-
-  // Notizbücher neu laden wenn Sync-Update erfolgt
-  useEffect(() => {
-    if (lastSyncUpdate > 0) {
-      logger.info('Sync-Update erkannt, lade Notizbücher neu');
-      loadNotebooks();
-    }
-  }, [lastSyncUpdate, loadNotebooks]);
 
   // Aktuelle Notiz laden
   useEffect(() => {
@@ -292,6 +280,11 @@ export default function Editor() {
               {saveStatus === 'saving' && (
                 <span style={{ color: isDark ? '#60a5fa' : '#2563eb' }}>
                   Speichert...
+                </span>
+              )}
+              {saveStatus === 'unsaved' && (
+                <span style={{ color: isDark ? '#facc15' : '#dc2626' }}>
+                  ● Nicht gespeichert
                 </span>
               )}
             </div>

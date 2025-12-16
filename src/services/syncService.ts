@@ -463,7 +463,9 @@ class SyncService {
   }
 
   private handleSyncActive(): void {
-    this.updateState({ status: 'syncing' });
+    // 'active' bedeutet nur, dass die Replikation läuft - nicht dass Daten übertragen werden
+    // Status wird nur in handleSyncChange bei tatsächlichen Änderungen auf 'syncing' gesetzt
+    logger.debug('Sync aktiv');
   }
 
   private handleSyncDenied(err: any): void {
