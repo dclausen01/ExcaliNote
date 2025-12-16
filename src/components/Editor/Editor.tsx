@@ -262,7 +262,13 @@ export default function Editor() {
           excalidrawAPI={handleExcalidrawAPI}
           onChange={handleChange}
           initialData={initialData}
-          validateEmbeddable={true}
+          validateEmbeddable={(url) => {
+            // Erlaube alle http/https URLs für Web Embeds
+            if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+              return true;
+            }
+            return false;
+          }}
           UIOptions={{
             canvasActions: {
               loadScene: false,

@@ -72,29 +72,33 @@ function createWindow() {
   });
 
   // Allow loading external content for embedded websites (iframes)
-  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    // Entferne Header, die das Einbetten in iframes blockieren
-    const responseHeaders = { ...details.responseHeaders };
+  // WICHTIG: URL-Filter hinzufügen damit alle Requests abgefangen werden
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    { urls: ['*://*/*'] },
+    (details, callback) => {
+      // Entferne Header, die das Einbetten in iframes blockieren
+      const responseHeaders = { ...details.responseHeaders };
 
-    // Diese Header verhindern das Einbetten - entfernen für Web Embeds
-    delete responseHeaders['x-frame-options'];
-    delete responseHeaders['X-Frame-Options'];
-    delete responseHeaders['content-security-policy'];
-    delete responseHeaders['Content-Security-Policy'];
+      // Diese Header verhindern das Einbetten - entfernen für Web Embeds
+      delete responseHeaders['x-frame-options'];
+      delete responseHeaders['X-Frame-Options'];
+      delete responseHeaders['content-security-policy'];
+      delete responseHeaders['Content-Security-Policy'];
 
-    callback({
-      responseHeaders: {
-        ...responseHeaders,
-        // Unsere eigene CSP die Embeds erlaubt
-        'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:; " +
-          "frame-src 'self' https: http:; " +
-          "child-src 'self' https: http: blob:; " +
-          "frame-ancestors 'self' *"
-        ]
-      }
-    });
-  });
+      callback({
+        responseHeaders: {
+          ...responseHeaders,
+          // Unsere eigene CSP die Embeds erlaubt
+          'Content-Security-Policy': [
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https: http:; " +
+            "frame-src 'self' https: http:; " +
+            "child-src 'self' https: http: blob:; " +
+            "frame-ancestors 'self' *"
+          ]
+        }
+      });
+    }
+  );
 
   // Erlaube Navigation in iframes zu externen URLs
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

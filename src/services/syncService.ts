@@ -424,12 +424,7 @@ class SyncService {
       },
     };
 
-    // Nur "syncing" anzeigen wenn mehrere Dokumente übertragen werden
-    // Kleine Änderungen (1-2 Docs) nicht als "syncing" anzeigen
     const docsCount = changeInfo.change.docs.length;
-    if (docsCount > 2) {
-      this.updateState({ status: 'syncing' });
-    }
 
     // Benachrichtige Listener über geänderte Dokumente
     if (docsCount > 0) {
@@ -463,9 +458,9 @@ class SyncService {
   }
 
   private handleSyncActive(): void {
-    // 'active' bedeutet nur, dass die Replikation läuft - nicht dass Daten übertragen werden
-    // Status wird nur in handleSyncChange bei tatsächlichen Änderungen auf 'syncing' gesetzt
-    logger.debug('Sync aktiv');
+    // 'active' bedeutet, dass Daten übertragen werden
+    this.updateState({ status: 'syncing' });
+    logger.debug('Sync aktiv - Datenübertragung läuft');
   }
 
   private handleSyncDenied(err: any): void {
